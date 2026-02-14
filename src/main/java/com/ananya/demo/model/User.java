@@ -1,4 +1,4 @@
-package com.ananya.demo;
+package com.ananya.demo.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;

@@ -1,4 +1,8 @@
-package com.ananya.demo;
+package com.ananya.demo.repository;
+import com.ananya.demo.model.User;
+
+
+
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
