@@ -1,10 +1,12 @@
-package com.studygroup.backend.config;
+package com.studygroup.backend.security;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
+import com.studygroup.backend.config.JwtUtil;
 
 import java.io.IOException;
 
