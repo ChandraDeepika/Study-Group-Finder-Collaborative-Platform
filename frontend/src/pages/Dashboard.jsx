@@ -1,30 +1,54 @@
+import React, { useEffect, useState } from "react";
+import ProfileCard from "../components/ProfileCard";
+import CoursesSection from "../components/CoursesSection";
+import SuggestedPeers from "../components/SuggestedPeers";
+import {
+  fetchUserProfile,
+  fetchCourses,
+  fetchPeers
+} from "../services/dashboardService";
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
+  const [user, setUser] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [peers, setPeers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+
+        const userData = await fetchUserProfile();
+        const courseData = await fetchCourses();
+        const peerData = await fetchPeers();
+
+        setUser(userData);
+        setCourses(courseData);
+        setPeers(peerData);
+      } catch (err) {
+        setError("Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  if (loading) return <div className="dashboard-container">Loading...</div>;
+  if (error) return <div className="dashboard-container">{error}</div>;
+
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
-        <h1>Welcome Back 👋</h1>
-        <p>
-          Manage your study groups, track meetings, and collaborate efficiently.
-        </p>
-      </div>
+    <div className="dashboard-container">
+      <h1>Dashboard</h1>
 
-      <div className="dashboard-cards">
-        <div className="dashboard-card">
-          <h3>📚 Study Groups</h3>
-          <p>Join and manage your active study groups.</p>
-        </div>
-
-        <div className="dashboard-card">
-          <h3>📅 Meetings</h3>
-          <p>Schedule and track upcoming group meetings.</p>
-        </div>
-
-        <div className="dashboard-card">
-          <h3>👥 Collaboration</h3>
-          <p>Connect and collaborate with peers easily.</p>
-        </div>
+      <div className="dashboard-grid">
+        {user && <ProfileCard user={user} />}
+        <CoursesSection courses={courses} setCourses={setCourses} />
+        <SuggestedPeers peers={peers} />
       </div>
     </div>
   );
