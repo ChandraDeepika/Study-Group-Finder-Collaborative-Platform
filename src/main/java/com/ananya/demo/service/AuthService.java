@@ -1,6 +1,7 @@
 package com.ananya.demo.service;
 import com.ananya.demo.model.User;
 import com.ananya.demo.repository.UserRepository;
+import com.ananya.demo.security.JwtUtil;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,9 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     public String register(User user) {
 
@@ -34,9 +38,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
-            return "Login successful";
+            return jwtUtil.generateToken(user.getEmail());
         } else {
-            return "Invalid credentials";
+            throw new RuntimeException("Invalid credentials");
         }
     }
 }
