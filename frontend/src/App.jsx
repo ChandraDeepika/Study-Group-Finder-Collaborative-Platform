@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
@@ -7,22 +7,52 @@ import Register from "./pages/Register";
 import Profile from "./profile/Profile";
 
 function App() {
+
+  const isLoggedIn = localStorage.getItem("userId");
+
   return (
-    <Router>
-      <Routes>
-        {/* Default route */}
-        <Route path="/" element={<Navigate to="/login" />} />
+    <Routes>
 
-        {/* Auth Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <Route
+        path="/"
+        element={
+          isLoggedIn
+            ? <Navigate to="/dashboard" />
+            : <Navigate to="/login" />
+        }
+      />
 
-        {/* Dashboard Routes */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
-    </Router>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          isLoggedIn
+            ? <Dashboard />
+            : <Navigate to="/login" />
+        }
+      />
+
+      <Route
+        path="/courses"
+        element={
+          isLoggedIn
+            ? <Courses />
+            : <Navigate to="/login" />
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          isLoggedIn
+            ? <Profile />
+            : <Navigate to="/login" />
+        }
+      />
+
+    </Routes>
   );
 }
 

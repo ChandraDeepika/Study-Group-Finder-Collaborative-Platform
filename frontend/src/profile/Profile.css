@@ -99,3 +99,11 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(57, 73, 171, 0.3);
 }
+.profile-summary-image {
+  width: 90px;        /* smaller size */
+  height: 90px;       /* fixed height */
+  object-fit: cover;  /* prevents stretching */
+  border-radius: 50%; /* makes it circular */
+  border: 3px solid #4f46e5;
+  margin-bottom: 12px;
+}

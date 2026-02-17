@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function Navbar() {
+function Navbar({ onLogout }) {
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -8,9 +8,15 @@ function Navbar() {
       </div>
 
       <div className="navbar-right">
-        <Link to="/" className="nav-link">Dashboard</Link>
+        <Link to="/dashboard" className="nav-link">Dashboard</Link>
         <Link to="/courses" className="nav-link">Courses</Link>
-        <button className="nav-btn logout">Logout</button>
+
+        <button
+          className="nav-btn logout"
+          onClick={onLogout}
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );

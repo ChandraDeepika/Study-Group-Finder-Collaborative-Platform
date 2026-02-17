@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
@@ -9,18 +8,11 @@ import AvailableGroups from "../components/AvailableGroups";
 import "../styles/dashboard.css";
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
 
-  // 🔒 Protect route
-  useEffect(() => {
-    if (!userId) {
-      navigate("/login");
-    }
-  }, [userId, navigate]);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("userId"); // ✅ only remove auth
     navigate("/login");
   };
 
