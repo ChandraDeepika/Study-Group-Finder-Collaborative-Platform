@@ -1,5 +1,5 @@
 package com.ananya.demo;
-import com.ananya.demo.User;
+//import com.ananya.demo.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
