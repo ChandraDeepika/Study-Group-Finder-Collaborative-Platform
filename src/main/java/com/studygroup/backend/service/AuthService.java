@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.repository.UserRepository;
-import com.studygroup.security.JwtUtil;
+import com.studygroup.backend.security.JwtUtil;
 
 @Service
 public class AuthService {

@@ -1,4 +1,4 @@
-package com.studygroup.security;
+package com.studygroup.backend.security;
 
 
 
