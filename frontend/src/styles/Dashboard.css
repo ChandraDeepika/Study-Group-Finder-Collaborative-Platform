@@ -1,37 +1,130 @@
-.dashboard-page {
-  padding: 50px;
-  background-color: #f9fafb;
-  min-height: 100vh;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f1f5f9;
 }
 
-.dashboard-header {
-  margin-bottom: 40px;
-}
+/* NAVBAR */
 
-.dashboard-header h1 {
-  margin-bottom: 10px;
-}
-
-.dashboard-header p {
-  color: #555;
-}
-
-.dashboard-cards {
+.navbar {
+  background-color: #1e293b;
+  color: white;
   display: flex;
-  gap: 40px;
+  justify-content: space-between;
+  padding: 15px 40px;
+  align-items: center;
 }
 
-.dashboard-card {
-  background-color: white;
-  padding: 25px;
-  border-radius: 14px;
-  width: 260px;
-  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.08);
-  transition: 0.3s ease;
+.navbar h2 {
+  margin: 0;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  margin-left: 20px;
   cursor: pointer;
+  font-size: 15px;
+  transition: 0.3s;
 }
 
-.dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.12);
+.nav-btn:hover {
+  color: #38bdf8;
+}
+
+.logout:hover {
+  color: #f87171;
+}
+
+/* DASHBOARD */
+
+.dashboard-container {
+  padding: 40px;
+}
+
+.dashboard-title {
+  margin-bottom: 30px;
+  color: #1e293b;
+}
+
+/* CARDS */
+
+.profile-card,
+.course-card,
+.peer-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  transition: 0.3s;
+}
+
+.profile-card:hover,
+.course-card:hover,
+.peer-card:hover {
+  transform: translateY(-3px);
+}
+
+.dashboard-sections {
+  display: flex;
+  gap: 25px;
+}
+
+/* COURSE LIST */
+
+.course-card ul,
+.peer-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.course-card li,
+.peer-card li {
+  background: #f8fafc;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* BUTTONS */
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #38bdf8;
+  color: white;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #0ea5e9;
+}
+
+.add-course {
+  margin-top: 15px;
+}
+
+input {
+  padding: 7px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  margin-right: 10px;
+}
+.nav-link {
+  color: white;
+  text-decoration: none;
+  margin-left: 20px;
+  font-size: 15px;
+  transition: 0.3s;
+}
+
+.nav-link:hover {
+  color: #38bdf8;
 }
