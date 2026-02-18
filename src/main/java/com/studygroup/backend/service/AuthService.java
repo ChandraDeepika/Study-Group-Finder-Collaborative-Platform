@@ -1,9 +1,12 @@
-package com.ananya.demo;
-//import com.ananya.demo.User;
+package com.studygroup.backend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.studygroup.backend.model.User;
+import com.studygroup.backend.repository.UserRepository;
+import com.studygroup.security.JwtUtil;
 
 @Service
 public class AuthService {
@@ -14,6 +17,10 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    // ✅ REGISTER
     public String register(User user) {
 
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
@@ -26,15 +33,19 @@ public class AuthService {
         return "User registered successfully";
     }
 
+    // ✅ LOGIN + RETURN JWT TOKEN
     public String login(String email, String password) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
-            return "Login successful";
+
+            // generate JWT token
+            return jwtUtil.generateToken(user.getEmail());
+
         } else {
-            return "Invalid credentials";
+            throw new RuntimeException("Invalid credentials");
         }
     }
 }
