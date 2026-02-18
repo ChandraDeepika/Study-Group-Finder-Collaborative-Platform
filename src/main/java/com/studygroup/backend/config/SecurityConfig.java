@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.studygroup.security.JwtFilter;
+import com.studygroup.backend.security.JwtFilter;
 
 @Configuration
 public class SecurityConfig {
