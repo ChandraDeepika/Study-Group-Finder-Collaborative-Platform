@@ -37,9 +37,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http
-            // disable csrf for APIs
-            .csrf(csrf -> csrf.disable())
+       
+            
+           http
+    .cors(cors -> {})   // ⭐ ADD THIS LINE
+    .csrf(csrf -> csrf.disable())
 
             // stateless session for JWT
             .sessionManagement(session ->

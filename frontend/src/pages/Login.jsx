@@ -21,51 +21,46 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!form.email || !form.password) {
-      setMessage("Please enter both email and password.");
-      return;
+  if (!form.email || !form.password) {
+    setMessage("Please enter both email and password.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:8080/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err || "Login failed");
     }
 
-    try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(form)
-      });
+    // ✅ READ TOKEN AS TEXT
+    const token = await res.text();
 
-      const data = await res.json();
+    console.log("TOKEN:", token);
 
-      if (!res.ok) {
-        setMessage(data.message || "Invalid email or password");
-      } else {
+    // ✅ SAVE TOKEN
+    localStorage.setItem("token", token.trim());
 
-        // ✅ Store user info
-        localStorage.setItem("userId", data.id);
-        localStorage.setItem("userEmail", data.email);
+    // ✅ SUCCESS MESSAGE
+    setMessage("Login successful!");
 
-        // 🔥 Check profile completion
-        const profileRes = await fetch(
-          `http://localhost:8080/api/profile/${data.id}`
-        );
+    // ✅ REDIRECT
+    navigate("/dashboard");
 
-        const profileData = await profileRes.json();
-
-        // If important fields missing → go to profile page
-        if (!profileData.location || !profileData.educationLevel) {
-          navigate("/profile");   // First login
-        } else {
-          navigate("/dashboard"); // Profile already completed
-        }
-      }
-
-    } catch (error) {
-      setMessage("Server error. Please try again.");
-    }
-  };
+  } catch (err) {
+    console.error(err);
+    setMessage("Login failed. Check credentials.");
+  }
+};
 
   return (
     <div className="auth-container">
@@ -84,6 +79,7 @@ function Login() {
             type="email"
             name="email"
             placeholder="Email"
+            value={form.email}
             onChange={handleChange}
           />
 
@@ -92,6 +88,7 @@ function Login() {
             type="password"
             name="password"
             placeholder="Password"
+            value={form.password}
             onChange={handleChange}
           />
 

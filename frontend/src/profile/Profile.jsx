@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
+// ⭐ import auth helper
+import { getToken } from "../utils/auth";
+
 function Profile() {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+
+  const token = getToken();                 // ✅ check login using token
+  const userId = localStorage.getItem("userId"); // keep if backend needs it
 
   const [form, setForm] = useState({
     name: "",
@@ -20,12 +25,24 @@ function Profile() {
 
   // 🔹 Load existing profile
   useEffect(() => {
-    if (!userId) {
+
+    // ✅ redirect only if NOT logged in
+    if (!token) {
       navigate("/login");
       return;
     }
 
-    fetch(`http://localhost:8080/api/profile/${userId}`)
+    // ⚠️ if backend really needs userId and it's missing
+    if (!userId) {
+      console.warn("No userId found in localStorage");
+      return;
+    }
+
+    fetch(`http://localhost:8080/api/profile/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`   // ⭐ send JWT
+      }
+    })
       .then(res => res.json())
       .then(data => {
         setForm(data);
@@ -34,7 +51,7 @@ function Profile() {
         console.log("Error fetching profile");
       });
 
-  }, [userId, navigate]);
+  }, [token, userId, navigate]);
 
   // 🔹 Handle input change
   const handleChange = (e) => {
@@ -64,6 +81,9 @@ function Profile() {
     try {
       const res = await fetch(`http://localhost:8080/api/profile/${userId}`, {
         method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`   // ⭐ send JWT here too
+        },
         body: formData
       });
 
