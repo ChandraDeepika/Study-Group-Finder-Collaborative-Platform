@@ -1,6 +1,5 @@
-export const getToken = () => {
-  return localStorage.getItem("token");
-};
+export const getToken = () => localStorage.getItem("token");
+
 
 export const isLoggedIn = () => {
   return !!localStorage.getItem("token");

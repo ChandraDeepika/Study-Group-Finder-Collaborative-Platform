@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import "../Auth.css";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
 
@@ -21,87 +20,125 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!form.email || !form.password) {
-    setMessage("Please enter both email and password.");
-    return;
-  }
-
-  try {
-    const res = await fetch("http://localhost:8080/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "Login failed");
+    if (!form.email || !form.password) {
+      setMessage("Please enter both email and password.");
+      return;
     }
 
-    // ✅ READ TOKEN AS TEXT
-    const token = await res.text();
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    console.log("TOKEN:", token);
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || "Login failed");
+      }
 
-    // ✅ SAVE TOKEN
-    localStorage.setItem("token", token.trim());
+      let token = await res.text();
+      token = token.replace(/"/g, "").trim();
 
-    // ✅ SUCCESS MESSAGE
-    setMessage("Login successful!");
+      localStorage.setItem("token", token);
 
-    // ✅ REDIRECT
-    navigate("/dashboard");
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const userId = payload.sub;
+      localStorage.setItem("userId", userId);
 
-  } catch (err) {
-    console.error(err);
-    setMessage("Login failed. Check credentials.");
-  }
-};
+      setMessage("Login successful!");
+
+      setTimeout(() => navigate("/dashboard"), 500);
+
+    } catch (err) {
+      console.error(err);
+      setMessage("Login failed. Check credentials.");
+    }
+  };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
 
-        <h2 className="auth-logo">📚 Study Group Finder</h2>
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "linear-gradient(to right,#5f9cff,#6ec6ff)"
+    }}>
 
-        <p className="auth-subtitle">
+      <div style={{
+        width: "420px",
+        background: "white",
+        padding: "40px",
+        borderRadius: "14px",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+        textAlign: "center"
+      }}>
+
+        <h2 style={{marginBottom:"6px"}}>📚 Study Group Finder</h2>
+        <p style={{marginBottom:"25px",color:"#666"}}>
           Connect. Collaborate. Succeed.
         </p>
 
         <form onSubmit={handleSubmit}>
 
           <input
-            className="auth-input"
             type="email"
             name="email"
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
+            style={{
+              width:"100%",
+              padding:"12px",
+              marginBottom:"15px",
+              borderRadius:"8px",
+              border:"1px solid #ccc"
+            }}
           />
 
           <input
-            className="auth-input"
             type="password"
             name="password"
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
+            style={{
+              width:"100%",
+              padding:"12px",
+              marginBottom:"20px",
+              borderRadius:"8px",
+              border:"1px solid #ccc"
+            }}
           />
 
-          <button className="auth-button" type="submit">
+          <button type="submit" style={{
+            width:"100%",
+            padding:"12px",
+            border:"none",
+            borderRadius:"8px",
+            background:"linear-gradient(to right,#2b8cff,#3db7ff)",
+            color:"white",
+            fontWeight:"bold",
+            cursor:"pointer"
+          }}>
             Login
           </button>
 
         </form>
 
-        {message && <p className="auth-error">{message}</p>}
+        {message && <p style={{marginTop:"15px"}}>{message}</p>}
 
-        <p className="auth-link">
-          Don't have an account? <Link to="/register">Register</Link>
+        <p style={{marginTop:"18px"}}>
+          Don’t have an account?{" "}
+          <span
+            style={{color:"#2b8cff",cursor:"pointer"}}
+            onClick={()=>navigate("/register")}
+          >
+            Register
+          </span>
         </p>
 
       </div>
