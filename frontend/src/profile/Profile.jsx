@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 function Profile() {
+
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+
+  const [token, setToken] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -18,25 +21,42 @@ function Profile() {
 
   const [image, setImage] = useState(null);
 
-  // 🔹 Load existing profile
+  // ✅ Load token + userId AFTER component mounts
   useEffect(() => {
-    if (!userId) {
+    const storedToken = localStorage.getItem("token");
+    const storedUserId = localStorage.getItem("userId");
+
+    if (!storedToken || !storedUserId) {
       navigate("/login");
       return;
     }
 
-    fetch(`http://localhost:8080/api/profile/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        setForm(data);
+    setToken(storedToken);
+    setUserId(storedUserId);
+
+  }, [navigate]);
+
+
+  // ✅ Fetch profile ONLY when token & userId available
+  useEffect(() => {
+
+    if (!token || !userId) return;
+
+    fetch(`http://localhost:8080/api/profile/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Profile fetch failed");
+        return res.json();
       })
-      .catch(() => {
-        console.log("Error fetching profile");
-      });
+      .then(data => setForm(data))
+      .catch(() => console.log("Error fetching profile"));
 
-  }, [userId, navigate]);
+  }, [token, userId]);
 
-  // 🔹 Handle input change
+
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -44,9 +64,14 @@ function Profile() {
     });
   };
 
-  // 🔹 Submit profile update
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!token || !userId) {
+      navigate("/login");
+      return;
+    }
 
     const formData = new FormData();
 
@@ -62,8 +87,12 @@ function Profile() {
     }
 
     try {
+
       const res = await fetch(`http://localhost:8080/api/profile/${userId}`, {
         method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         body: formData
       });
 
@@ -74,10 +103,11 @@ function Profile() {
         alert("Failed to update profile.");
       }
 
-    } catch (error) {
+    } catch {
       alert("Server error.");
     }
   };
+
 
   return (
     <div className="profile-container">
@@ -89,55 +119,17 @@ function Profile() {
       <div className="profile-card">
         <form className="profile-form" onSubmit={handleSubmit}>
 
-          <input
-            name="name"
-            value={form.name || ""}
-            onChange={handleChange}
-            placeholder="Full Name"
-          />
+          <input name="name" value={form.name || ""} onChange={handleChange} placeholder="Full Name"/>
+          <input name="location" value={form.location || ""} onChange={handleChange} placeholder="Location"/>
+          <input name="educationLevel" value={form.educationLevel || ""} onChange={handleChange} placeholder="Education Level"/>
+          <input name="field" value={form.field || ""} onChange={handleChange} placeholder="Field of Study"/>
 
-          <input
-            name="location"
-            value={form.location || ""}
-            onChange={handleChange}
-            placeholder="Location"
-          />
+          <input className="full-width" name="skills" value={form.skills || ""} onChange={handleChange} placeholder="Skills (comma separated)"/>
 
-          <input
-            name="educationLevel"
-            value={form.educationLevel || ""}
-            onChange={handleChange}
-            placeholder="Education Level"
-          />
-
-          <input
-            name="field"
-            value={form.field || ""}
-            onChange={handleChange}
-            placeholder="Field of Study"
-          />
-
-          <input
-            className="full-width"
-            name="skills"
-            value={form.skills || ""}
-            onChange={handleChange}
-            placeholder="Skills (comma separated)"
-          />
-
-          <textarea
-            className="full-width"
-            name="bio"
-            value={form.bio || ""}
-            onChange={handleChange}
-            placeholder="Short Bio"
-          />
+          <textarea className="full-width" name="bio" value={form.bio || ""} onChange={handleChange} placeholder="Short Bio"/>
 
           <div className="profile-image-upload">
-            <input
-              type="file"
-              onChange={(e) => setImage(e.target.files[0])}
-            />
+            <input type="file" onChange={(e)=>setImage(e.target.files[0])}/>
 
             {form.profileImage && (
               <img

@@ -6,49 +6,57 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./profile/Profile";
 
+// ⭐ import auth helper
+import { isLoggedIn } from "./utils/auth";
+
+// ✅ central private route using helper
+const PrivateRoute = ({ children }) => {
+  return isLoggedIn() ? children : <Navigate to="/login" replace />;
+};
+
 function App() {
-
-  const isLoggedIn = localStorage.getItem("userId");
-
   return (
     <Routes>
 
+      {/* Root redirect */}
       <Route
         path="/"
         element={
-          isLoggedIn
-            ? <Navigate to="/dashboard" />
-            : <Navigate to="/login" />
+          isLoggedIn()
+            ? <Navigate to="/dashboard" replace />
+            : <Navigate to="/login" replace />
         }
       />
 
+      {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
+      {/* Protected routes */}
       <Route
         path="/dashboard"
         element={
-          isLoggedIn
-            ? <Dashboard />
-            : <Navigate to="/login" />
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
         }
       />
 
       <Route
         path="/courses"
         element={
-          isLoggedIn
-            ? <Courses />
-            : <Navigate to="/login" />
+          <PrivateRoute>
+            <Courses />
+          </PrivateRoute>
         }
       />
 
       <Route
         path="/profile"
         element={
-          isLoggedIn
-            ? <Profile />
-            : <Navigate to="/login" />
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
         }
       />
 
