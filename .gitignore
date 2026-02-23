@@ -31,3 +31,17 @@ build/
 
 ### VS Code ###
 .vscode/
+# Node
+node_modules/
+frontend/node_modules/
+
+# Build
+dist/
+build/
+
+# Logs
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
