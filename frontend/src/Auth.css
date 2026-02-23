@@ -1,87 +1,96 @@
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(120deg, #667eea, #764ba2);
+.auth-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.auth-container {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: linear-gradient(135deg, #4e73df, #1cc88a);
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .auth-card {
-  background: white;
-  padding: 45px;
-  border-radius: 14px;
   width: 400px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
   text-align: center;
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 .auth-logo {
+  margin-bottom: 8px;
   font-size: 22px;
-  font-weight: bold;
-  color: #1e40af;
-  margin-bottom: 5px;
+  font-weight: 600;
 }
 
 .auth-subtitle {
-  font-size: 14px;
-  color: #64748b;
   margin-bottom: 25px;
+  color: #666;
+  font-size: 14px;
 }
 
 .auth-input {
   width: 100%;
   padding: 12px;
-  margin: 12px 0;
+  margin-bottom: 18px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #ddd;
+  font-size: 14px;
   transition: 0.3s;
 }
 
 .auth-input:focus {
+  border-color: #4e73df;
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 6px rgba(78,115,223,0.3);
 }
 
 .auth-button {
   width: 100%;
   padding: 12px;
-  background: #2563eb;
   border: none;
-  color: white;
-  font-size: 16px;
   border-radius: 8px;
+  background: linear-gradient(to right, #4e73df, #224abe);
+  color: white;
+  font-weight: 600;
   cursor: pointer;
   transition: 0.3s;
 }
 
 .auth-button:hover {
-  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
 .auth-error {
-  color: #dc2626;
-  font-size: 14px;
+  color: #e74a3b;
+  font-size: 13px;
   margin-top: 10px;
 }
 
 .auth-link {
-  margin-top: 15px;
-  display: block;
+  margin-top: 18px;
   font-size: 14px;
-  color: #2563eb;
-  text-decoration: none;
 }
 
-.auth-link:hover {
+.auth-link span {
+  color: #4e73df;
+  cursor: pointer;
+  margin-left: 5px;
+  font-weight: 600;
+}
+
+.auth-link span:hover {
   text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

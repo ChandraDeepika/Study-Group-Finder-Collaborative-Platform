@@ -4,14 +4,17 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Profile from "./profile/Profile";
 
-// ⭐ import auth helper
 import { isLoggedIn } from "./utils/auth";
 
-// ✅ central private route using helper
+/* ===== Protected Route ===== */
 const PrivateRoute = ({ children }) => {
   return isLoggedIn() ? children : <Navigate to="/login" replace />;
+};
+
+/* ===== Public Route (Block logged-in users) ===== */
+const PublicRoute = ({ children }) => {
+  return isLoggedIn() ? <Navigate to="/dashboard" replace /> : children;
 };
 
 function App() {
@@ -28,11 +31,26 @@ function App() {
         }
       />
 
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* Public Routes */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
 
-      {/* Protected routes */}
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        }
+      />
+
+      {/* Protected Routes */}
       <Route
         path="/dashboard"
         element={
@@ -51,13 +69,10 @@ function App() {
         }
       />
 
+      {/* 404 Fallback */}
       <Route
-        path="/profile"
-        element={
-          <PrivateRoute>
-            <Profile />
-          </PrivateRoute>
-        }
+        path="*"
+        element={<Navigate to="/" replace />}
       />
 
     </Routes>

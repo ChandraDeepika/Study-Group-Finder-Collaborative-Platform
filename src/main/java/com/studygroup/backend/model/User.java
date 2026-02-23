@@ -1,43 +1,106 @@
 package com.studygroup.backend.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.Setter;
 
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Name is required")
     private String name;
-
-    @Email(message = "Invalid email format")
-    @NotBlank(message = "Email is required")
-    @Column(unique = true)
     private String email;
-
-    @NotBlank(message = "Password is required")
     private String password;
 
-    // Studygroup extra fields
-    private String role; // USER / ADMIN
-    private String universityName;
-    private Integer universityPassingYear;
-    private Float universityPassingGPA;
-    private String avatarUrl;
+    private String location;
+    private String educationLevel;
+    private String field;
+    private String skills;
+    private String bio;
+    private String profileImage;
 
-    // Optional: default role
-    @PrePersist
-    public void setDefaultRole() {
-        if (role == null || role.isEmpty()) {
-            role = "USER";
-        }
+    public User() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getEducationLevel() {
+        return educationLevel;
+    }
+
+    public void setEducationLevel(String educationLevel) {
+        this.educationLevel = educationLevel;
+    }
+
+    public String getField() {
+        return field;
+    }
+
+    public void setField(String field) {
+        this.field = field;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 }

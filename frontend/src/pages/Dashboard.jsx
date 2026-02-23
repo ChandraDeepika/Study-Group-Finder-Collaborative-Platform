@@ -12,9 +12,10 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("userId"); // ✅ only remove auth
-    navigate("/login");
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId");
+  navigate("/login");
+};
 
   return (
     <>

@@ -1,12 +1,9 @@
-
 package com.studygroup.backend.controller;
 
-import com.studygroup.backend.dto.ProfileCreateRequest;
-import com.studygroup.backend.dto.ProfileUpdateRequest;
 import com.studygroup.backend.model.User;
-import com.studygroup.backend.service.ProfileService;
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
+import com.studygroup.backend.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,39 +11,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/profile")
 public class ProfileController {
 
-    private final ProfileService profileService;
+    @Autowired
+    private UserRepository userRepository;
 
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
-    }
-    
-    //GET PROFILE
-    @GetMapping
-    public ResponseEntity<User> getProfile(Authentication authentication){
-        return ResponseEntity.ok(
-            profileService.getProfile(authentication.getName())
-        );
-    }
+    // ✅ Get logged-in user's profile using JWT
+    @GetMapping("/me")
+    public User getMyProfile(Authentication authentication) {
 
-    //CREATE PROFILE (first-time setup)
-    @PostMapping
-    public ResponseEntity<User> createProfile(
-            @RequestBody ProfileCreateRequest request,
-            Authentication authentication) {
-            
-        return ResponseEntity.ok(
-                profileService.createProfile(authentication.getName(), request)
-        );
-    }
-    
-    //UPDATE PROFILE 
-    @PutMapping
-    public ResponseEntity<User> updateProfile(
-            @Valid @RequestBody ProfileUpdateRequest request,
-            Authentication authentication) {
+        String email = authentication.getName();
 
-        return ResponseEntity.ok(
-                profileService.updateProfile(authentication.getName(), request)
-        );
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
     }
 }
