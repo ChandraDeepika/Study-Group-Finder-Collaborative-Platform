@@ -1,12 +1,16 @@
 package com.studygroup.backend.config;
 
+import com.studygroup.backend.security.JwtFilter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -14,8 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import com.studygroup.backend.security.JwtFilter;
 
 import java.util.List;
 
@@ -25,52 +27,73 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // ✅ Password encoder
+    // ✅ PASSWORD ENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ Authentication manager
+    // ✅ AUTHENTICATION MANAGER
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS CONFIGURATION (THIS FIXES LOGIN BLOCK)
-  @Bean
-public CorsConfigurationSource corsConfigurationSource() {
+    // ✅ DAO AUTHENTICATION PROVIDER (THIS FIXES 403 LOGIN ISSUE)
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(
+            UserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
 
-    CorsConfiguration config = new CorsConfiguration();
+        DaoAuthenticationProvider authProvider =
+                new DaoAuthenticationProvider();
 
-    config.setAllowedOriginPatterns(List.of(
-        "http://localhost:*",
-        "http://127.0.0.1:*"
-    ));
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
 
-    config.setAllowedMethods(List.of("*"));
-    config.setAllowedHeaders(List.of("*"));
-    config.setAllowCredentials(true);
+        return authProvider;
+    }
 
-    UrlBasedCorsConfigurationSource source =
-            new UrlBasedCorsConfigurationSource();
+    // ✅ CORS CONFIGURATION
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
 
-    source.registerCorsConfiguration("/**", config);
+        CorsConfiguration config = new CorsConfiguration();
 
-    return source;
-}
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        ));
+        config.setAllowedMethods(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     // ✅ SECURITY FILTER CHAIN
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .cors(cors -> {})   // enable cors using bean above
+            .cors(cors -> {})
             .csrf(csrf -> csrf.disable())
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+
+            .authenticationProvider(authenticationProvider(
+                    http.getSharedObject(
+                        org.springframework.context.ApplicationContext.class
+                    ).getBean(UserDetailsService.class),
+                    passwordEncoder()
+            ))
 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
@@ -84,4 +107,4 @@ public CorsConfigurationSource corsConfigurationSource() {
 
         return http.build();
     }
-}
+} 
