@@ -1,0 +1,49 @@
+.sidebar {
+  width: 240px;
+  background: #0b1120;
+  padding: 40px 30px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 50px;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.nav-links a.active {
+  background: #2563eb;
+  color: white;
+}
+
+.nav-links a:hover {
+  background: #1e293b;
+  color: white;
+}
+
+.logout-btn {
+  background: #ef4444;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+}

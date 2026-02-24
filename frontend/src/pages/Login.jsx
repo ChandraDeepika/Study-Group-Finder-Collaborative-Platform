@@ -39,17 +39,17 @@ function Login() {
         throw new Error(err || "Login failed");
       }
 
-      let token = await res.text();
-      token = token.replace(/"/g, "").trim();
+      const user = await res.json(); // ✅ Backend returns User object
 
-      localStorage.setItem("token", token);
+      // Store full user object
+      localStorage.setItem("user", JSON.stringify(user));
 
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const userId = payload.sub;
-      localStorage.setItem("userId", userId);
+      // Store user ID separately
+      localStorage.setItem("userId", user.id);
 
       setMessage("Login successful!");
 
+      // Navigate to dashboard
       setTimeout(() => navigate("/dashboard"), 500);
 
     } catch (err) {

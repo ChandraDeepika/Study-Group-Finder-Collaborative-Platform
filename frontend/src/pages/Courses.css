@@ -1,0 +1,95 @@
+.courses-wrapper {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Header */
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Section */
+.courses-section {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.courses-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Grid */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 25px;
+}
+
+/* Course Card */
+.course-card {
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+  transition: 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.course-card:hover {
+  transform: translateY(-6px);
+}
+
+.course-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Buttons */
+.primary-btn {
+  background: #2563eb;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.primary-btn:hover {
+  background: #1d4ed8;
+}
+
+.secondary-btn {
+  background: #e2e8f0;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Empty state */
+.empty-state {
+  background: #f8fafc;
+  padding: 25px;
+  border-radius: 14px;
+  color: #64748b;
+  font-size: 14px;
+}

@@ -1,33 +1,37 @@
-import Navbar from "../components/Navbar";
-import "../styles/dashboard.css";
+import Layout from "../components/Layout";
+import "../styles/page.css";
 
-function Courses() {
-
-  const courses = [
-    "Data Structures",
-    "Signals & Systems",
-    "Computer Networks",
-    "Operating Systems"
-  ];
-
+export default function Courses() {
   return (
-    <>
-      <Navbar />
-
-      <div className="dashboard-container">
-        <h1 className="dashboard-title">All Courses</h1>
+    <Layout>
+      <div className="page-wrapper">
+        <div className="page-header">
+          <h1>Courses</h1>
+          <p>Browse and manage your enrolled courses</p>
+        </div>
 
         <div className="courses-grid">
-          {courses.map((course, index) => (
-            <div key={index} className="course-card-modern">
-              <h3>{course}</h3>
-              <p>Click to explore study groups</p>
-            </div>
-          ))}
+          <div className="course-card">
+            <h3>Data Structures</h3>
+            <button>Join</button>
+          </div>
+
+          <div className="course-card">
+            <h3>Operating Systems</h3>
+            <button>Join</button>
+          </div>
+
+          <div className="course-card">
+            <h3>Computer Networks</h3>
+            <button>Join</button>
+          </div>
+
+          <div className="course-card">
+            <h3>Signals & Systems</h3>
+            <button>Join</button>
+          </div>
         </div>
       </div>
-    </>
+    </Layout>
   );
 }
-
-export default Courses;

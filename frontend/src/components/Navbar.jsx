@@ -1,20 +1,27 @@
-import { Link } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import "./Navbar.css";
 
-function Navbar({ onLogout }) {
+function Navbar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    navigate("/login");
+  };
+
   return (
     <nav className="navbar">
-      <div className="navbar-left">
-        <h2>StudyGroup</h2>
+      <div className="nav-logo">
+        StudyConnect
       </div>
 
-      <div className="navbar-right">
-        <Link to="/dashboard" className="nav-link">Dashboard</Link>
-        <Link to="/courses" className="nav-link">Courses</Link>
-
-        <button
-          className="nav-btn logout"
-          onClick={onLogout}
-        >
+      <div className="nav-links">
+        <NavLink to="/dashboard">Dashboard</NavLink>
+        <NavLink to="/courses">Courses</NavLink>
+        <NavLink to="/groups">Groups</NavLink>
+    
+        <button onClick={handleLogout} className="logout-btn">
           Logout
         </button>
       </div>

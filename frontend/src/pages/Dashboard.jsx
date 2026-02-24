@@ -1,37 +1,56 @@
-import { useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
+import "./Dashboard.css";
 
-import Navbar from "../components/Navbar";
-import ProfileCard from "../components/ProfileCard";
-import CourseList from "../components/CourseList";
-import AvailableGroups from "../components/AvailableGroups";
-
-import "../styles/dashboard.css";
-
-function Dashboard() {
-
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("userId"); // ✅ only remove auth
-    navigate("/login");
-  };
-
+export default function Dashboard() {
   return (
-    <>
-      <Navbar onLogout={handleLogout} />
+    <Layout>
+      <div className="dashboard-wrapper">
 
-      <div className="dashboard-container">
-        <h1 className="dashboard-title">Dashboard Overview</h1>
-
-        <ProfileCard />
-
-        <div className="dashboard-sections">
-          <CourseList />
-          <AvailableGroups />
+        <div className="welcome-card">
+          <div>
+            <h1>Welcome back, Alex</h1>
+            <p>Here's what's happening with your studies today.</p>
+          </div>
         </div>
+
+        <div className="stats-row">
+          <div className="stat-box">
+            <div className="stat-number">4</div>
+            <div className="stat-label">Enrolled Courses</div>
+          </div>
+
+          <div className="stat-box">
+            <div className="stat-number">3</div>
+            <div className="stat-label">Study Groups</div>
+          </div>
+
+          <div className="stat-box">
+            <div className="stat-number">75%</div>
+            <div className="stat-label">Learning Progress</div>
+          </div>
+        </div>
+
+        <div className="content-grid">
+          <div className="content-card">
+            <h3>Enrolled Courses</h3>
+            <ul>
+              <li>Data Structures</li>
+              <li>Operating Systems</li>
+              <li>Computer Networks</li>
+            </ul>
+          </div>
+
+          <div className="content-card">
+            <h3>Suggested Groups</h3>
+            <ul>
+              <li>DSA Evening Batch</li>
+              <li>OS Interview Prep</li>
+              <li>Signals Crash Group</li>
+            </ul>
+          </div>
+        </div>
+
       </div>
-    </>
+    </Layout>
   );
 }
-
-export default Dashboard;
