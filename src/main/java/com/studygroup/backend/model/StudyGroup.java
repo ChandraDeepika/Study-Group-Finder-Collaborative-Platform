@@ -1,6 +1,9 @@
 package com.studygroup.backend.model;
 
+import com.studygroup.backend.model.enums.GroupPrivacy;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,10 +17,20 @@ public class StudyGroup {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 500)
     private String description;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    // 🔒 PUBLIC / PRIVATE
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GroupPrivacy privacy;
 
+    // 🕒 Auto-managed creation timestamp
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    // 👤 Group creator
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
@@ -42,6 +55,14 @@ public class StudyGroup {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public GroupPrivacy getPrivacy() {
+        return privacy;
+    }
+
+    public void setPrivacy(GroupPrivacy privacy) {
+        this.privacy = privacy;
     }
 
     public LocalDateTime getCreatedAt() {
