@@ -16,4 +16,7 @@ public interface UserStudyGroupRepository
     );
 
     List<UserStudyGroup> findByStudyGroupId(Long studyGroupId);
+
+    // ✅ ADD THIS
+    boolean existsByStudyGroupIdAndUserId(Long studyGroupId, Long userId);
 }

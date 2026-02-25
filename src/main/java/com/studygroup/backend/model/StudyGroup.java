@@ -25,15 +25,20 @@ public class StudyGroup {
     @Column(nullable = false)
     private GroupPrivacy privacy;
 
-    // 🕒 Auto-managed creation timestamp
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    // 🆕 COURSE RELATION
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     // 👤 Group creator
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
+
+    // 🕒 Auto-managed creation timestamp
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     // ===== GETTERS & SETTERS =====
 
@@ -65,8 +70,12 @@ public class StudyGroup {
         this.privacy = privacy;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(Course course) {
+        this.course = course;
     }
 
     public User getCreatedBy() {
@@ -75,5 +84,9 @@ public class StudyGroup {
 
     public void setCreatedBy(User createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

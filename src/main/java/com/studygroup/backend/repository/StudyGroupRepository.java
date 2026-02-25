@@ -22,5 +22,5 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
      * ⚠️ ENABLE THIS ONLY IF StudyGroup HAS:
      * private Course course;
      */
-    List<StudyGroup> findByCourseId(Long courseId);
+   List<StudyGroup> findByCourse_Id(Long courseId);
 }
