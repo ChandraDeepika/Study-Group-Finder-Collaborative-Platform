@@ -1,0 +1,131 @@
+.profile-dropdown-wrap {
+  position: relative;
+}
+
+.profile-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.profile-dropdown-btn:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.profile-dropdown-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.profile-dropdown-avatar.img {
+  object-fit: cover;
+}
+
+.profile-dropdown-avatar.placeholder {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.profile-dropdown-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-dropdown-chevron {
+  font-size: 10px;
+  color: #64748b;
+  transition: transform 0.2s;
+}
+
+.profile-dropdown-wrap.is-open .profile-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.profile-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 320px;
+  z-index: 1000;
+  animation: profileDropdownIn 0.2s ease;
+}
+
+@keyframes profileDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-dropdown-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.profile-dropdown-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-dropdown-image-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.profile-dropdown-image,
+.profile-dropdown-image-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.profile-dropdown-image {
+  object-fit: cover;
+  border: 3px solid #e2e8f0;
+}
+
+.profile-dropdown-image-placeholder {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.profile-dropdown-card p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #334155;
+}
+
+.profile-dropdown-card p:last-child {
+  margin-bottom: 0;
+}

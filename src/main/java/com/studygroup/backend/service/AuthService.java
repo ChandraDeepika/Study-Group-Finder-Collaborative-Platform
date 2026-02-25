@@ -5,12 +5,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.studygroup.backend.dto.LoginResponse;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.security.JwtUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Service
 public class AuthService {
@@ -54,19 +57,24 @@ public class AuthService {
         user.setBio(bio);
 
         if (image != null && !image.isEmpty()) {
-            try {
-                String uploadDir = "uploads/";
-                File dir = new File(uploadDir);
-                if (!dir.exists()) dir.mkdirs();
+            String originalName = image.getOriginalFilename();
+            if (originalName != null && !originalName.isBlank()) {
+                String ext = originalName.contains(".") ? originalName.substring(originalName.lastIndexOf(".")).toLowerCase() : "";
+                if (ext.matches("\\.(jpg|jpeg|png|gif|webp)")) {
+                    try {
+                        Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
+                        Files.createDirectories(uploadDir);
 
-                String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-                File file = new File(uploadDir + fileName);
+                        String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                        String fileName = System.currentTimeMillis() + "_" + safeName;
+                        Path targetPath = uploadDir.resolve(fileName);
 
-                image.transferTo(file);
-                user.setProfileImage(fileName);
-
-            } catch (IOException e) {
-                return "Image upload failed";
+                        image.transferTo(targetPath.toFile());
+                        user.setProfileImage(fileName);
+                    } catch (IOException e) {
+                        // Save user without profile image
+                    }
+                }
             }
         }
 
@@ -75,24 +83,19 @@ public class AuthService {
         return "User registered successfully";
     }
 
-    // ✅ LOGIN (NOW RETURNS TOKEN WITH USER ID)
-    public String login(String email, String password) {
+    // ✅ LOGIN (RETURNS TOKEN + USER INFO)
+    public LoginResponse login(String email, String password) {
 
         email = email.toLowerCase();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (passwordEncoder.matches(password, user.getPassword())) {
-
-            // 🔥 IMPORTANT CHANGE
-            return jwtUtil.generateToken(
-                    user.getEmail(),
-                    user.getId()
-            );
-
-        } else {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId());
+        return new LoginResponse(token, user.getId(), user.getEmail(), user.getName());
     }
 }

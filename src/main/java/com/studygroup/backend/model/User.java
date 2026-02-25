@@ -1,5 +1,6 @@
 package com.studygroup.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +13,7 @@ public class User {
 
     private String name;
     private String email;
+    @JsonIgnore
     private String password;
 
     private String location;
@@ -20,6 +22,10 @@ public class User {
     private String skills;
     private String bio;
     private String profileImage;
+
+    private String universityName;
+    private Integer universityPassingYear;
+    private Float universityPassingGPA;
 
     public User() {
     }
@@ -102,5 +108,29 @@ public class User {
 
     public void setProfileImage(String profileImage) {
         this.profileImage = profileImage;
+    }
+
+    public String getUniversityName() {
+        return universityName;
+    }
+
+    public void setUniversityName(String universityName) {
+        this.universityName = universityName;
+    }
+
+    public Integer getUniversityPassingYear() {
+        return universityPassingYear;
+    }
+
+    public void setUniversityPassingYear(Integer universityPassingYear) {
+        this.universityPassingYear = universityPassingYear;
+    }
+
+    public Float getUniversityPassingGPA() {
+        return universityPassingGPA;
+    }
+
+    public void setUniversityPassingGPA(Float universityPassingGPA) {
+        this.universityPassingGPA = universityPassingGPA;
     }
 }

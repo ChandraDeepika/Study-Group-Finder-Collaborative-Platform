@@ -41,7 +41,6 @@ function ProfileCard() {
 
         const data = await res.json();
         setProfile(data);
-
       } catch (error) {
         console.log("Error fetching profile:", error);
         setProfile(null);
@@ -51,7 +50,6 @@ function ProfileCard() {
     };
 
     fetchProfile();
-
   }, [token, navigate]);
 
   if (loading) {
@@ -76,13 +74,19 @@ function ProfileCard() {
 
       <h2>Profile Summary</h2>
 
-      {profile.profileImage && (
-        <img
-          src={`http://localhost:8080/uploads/${profile.profileImage}`}
-          alt="Profile"
-          className="profile-summary-image"
-        />
-      )}
+      <div className="profile-summary-image-wrap">
+        {profile.profileImageBase64 ? (
+          <img
+            src={profile.profileImageBase64}
+            alt="Profile"
+            className="profile-summary-image"
+          />
+        ) : (
+          <div className="profile-summary-image-placeholder">
+            <span>{profile.name?.charAt(0)?.toUpperCase() || "?"}</span>
+          </div>
+        )}
+      </div>
 
       <p><strong>Name:</strong> {profile.name || "Not set"}</p>
       <p><strong>Email:</strong> {profile.email || "Not set"}</p>

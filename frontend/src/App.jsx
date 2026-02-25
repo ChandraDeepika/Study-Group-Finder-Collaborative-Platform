@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
+import Groups from "./pages/Groups";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -21,7 +22,7 @@ function App() {
   return (
     <Routes>
 
-      {/* Root redirect */}
+      {/* Root Redirect */}
       <Route
         path="/"
         element={
@@ -69,11 +70,17 @@ function App() {
         }
       />
 
-      {/* 404 Fallback */}
       <Route
-        path="*"
-        element={<Navigate to="/" replace />}
+        path="/groups"
+        element={
+          <PrivateRoute>
+            <Groups />
+          </PrivateRoute>
+        }
       />
+
+      {/* 404 Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
   );
