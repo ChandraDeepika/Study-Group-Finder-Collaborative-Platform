@@ -9,11 +9,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* Page content area */
 .page-content {
   flex: 1;
-  padding: 50px;
+  padding: 40px 50px 50px;
   overflow-y: auto;
 }

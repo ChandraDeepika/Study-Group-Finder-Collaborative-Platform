@@ -2,7 +2,6 @@ package com.studygroup.backend.config;
 
 import com.studygroup.backend.security.JwtFilter;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,8 +23,11 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    @Autowired
-    private JwtFilter jwtFilter;
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
 
     // ✅ PASSWORD ENCODER
     @Bean
@@ -40,71 +42,57 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // ✅ DAO AUTHENTICATION PROVIDER (THIS FIXES 403 LOGIN ISSUE)
+    // ✅ DAO AUTHENTICATION PROVIDER
     @Bean
     public DaoAuthenticationProvider authenticationProvider(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
+            UserDetailsService userDetailsService) {
 
-        DaoAuthenticationProvider authProvider =
-                new DaoAuthenticationProvider();
-
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 
-    // ✅ CORS CONFIGURATION
+    // ✅ CORS — allows both localhost:5173 (Vite) and any other local port
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
-
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*"
         ));
-        config.setAllowedMethods(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
 
     // ✅ SECURITY FILTER CHAIN
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            DaoAuthenticationProvider authenticationProvider) throws Exception {
 
         http
-            .cors(cors -> {})
-            .csrf(csrf -> csrf.disable())
-
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-
-            .authenticationProvider(authenticationProvider(
-                    http.getSharedObject(
-                        org.springframework.context.ApplicationContext.class
-                    ).getBean(UserDetailsService.class),
-                    passwordEncoder()
-            ))
-
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().authenticated()
-            )
-
-            .formLogin(form -> form.disable())
-            .httpBasic(basic -> basic.disable())
-
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(cors -> {})
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authenticationProvider(authenticationProvider)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll() // serve profile images
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-} 
+}

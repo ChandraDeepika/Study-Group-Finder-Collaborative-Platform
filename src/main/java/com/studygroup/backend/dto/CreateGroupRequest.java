@@ -1,4 +1,3 @@
-
 package com.studygroup.backend.dto;
 
 public class CreateGroupRequest {
@@ -7,29 +6,11 @@ public class CreateGroupRequest {
     private String description;
     private String privacy; // PUBLIC / PRIVATE
 
-    // getters
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public String getPrivacy() { return privacy; }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getPrivacy() {
-        return privacy;
-    }
-
-    // setters
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setPrivacy(String privacy) {
-        this.privacy = privacy;
-    }
+    public void setName(String name) { this.name = name; }
+    public void setDescription(String description) { this.description = description; }
+    public void setPrivacy(String privacy) { this.privacy = privacy; }
 }

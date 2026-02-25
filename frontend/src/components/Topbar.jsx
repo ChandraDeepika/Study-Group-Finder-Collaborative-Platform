@@ -1,5 +1,5 @@
 import "../styles/topbar.css";
-import defaultAvatar from "../assets/react.svg";
+import ProfileDropdown from "./ProfileDropdown";
 
 export default function Topbar() {
   return (
@@ -11,14 +11,7 @@ export default function Topbar() {
           className="search-input"
         />
 
-        <div className="user-info">
-          <img
-            src={defaultAvatar}
-            alt="profile"
-            className="avatar"
-          />
-          <span className="username">John Doe</span>
-        </div>
+        <ProfileDropdown />
       </div>
     </div>
   );
