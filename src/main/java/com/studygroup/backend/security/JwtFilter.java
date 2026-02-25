@@ -5,14 +5,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -23,34 +25,46 @@ public class JwtFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
     }
 
+    // Skip filter entirely for auth endpoints
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        return request.getServletPath().startsWith("/api/auth/");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain chain)
             throws ServletException, IOException {
 
-        // Skip authentication for register & login
-        if (request.getRequestURI().startsWith("/api/auth")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        String header = request.getHeader("Authorization");
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
             try {
-                String email = jwtUtil.extractUsername(token);
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                String username = jwtUtil.extractUsername(token);
+
+                if (username != null &&
+                        SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                    if (jwtUtil.validateToken(token, username)) {
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(
+                                        username,
+                                        null,
+                                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                                );
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
                 }
             } catch (Exception e) {
-                // Invalid or expired token - continue without auth (Spring will return 403)
+                // Invalid or expired token — Spring will return 403
+                System.out.println("JWT ERROR: " + e.getMessage());
             }
         }
 
-        filterChain.doFilter(request, response);
+        chain.doFilter(request, response);
     }
 }

@@ -1,5 +1,5 @@
 import Layout from "../components/Layout";
-import "../styles/courses.css";
+import "./courses.css";
 
 export default function Groups() {
   const groups = [

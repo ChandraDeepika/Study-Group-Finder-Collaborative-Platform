@@ -38,15 +38,22 @@ export default function ProfileDropdown() {
     fetchProfile();
   }, [token, navigate]);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    navigate("/login");
+  };
 
   if (loading) {
     return (
@@ -62,11 +69,15 @@ export default function ProfileDropdown() {
   const hasImage = !!profile?.profileImageBase64;
 
   return (
-    <div className={`profile-dropdown-wrap ${open ? "is-open" : ""}`} ref={dropdownRef}>
+    <div
+      className={`profile-dropdown-wrap ${open ? "is-open" : ""}`}
+      ref={dropdownRef}
+    >
+      {/* Trigger button */}
       <button
         type="button"
         className="profile-dropdown-btn"
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="true"
       >
@@ -82,13 +93,15 @@ export default function ProfileDropdown() {
           </div>
         )}
         <span className="profile-dropdown-name">{displayName}</span>
-        <span className="profile-dropdown-chevron">▼</span>
+        <span className="profile-dropdown-chevron">{open ? "▲" : "▼"}</span>
       </button>
 
+      {/* Dropdown panel */}
       {open && (
         <div className="profile-dropdown-panel">
           <div className="profile-dropdown-card">
             <h3>Profile Summary</h3>
+
             <div className="profile-dropdown-image-wrap">
               {hasImage ? (
                 <img
@@ -102,6 +115,7 @@ export default function ProfileDropdown() {
                 </div>
               )}
             </div>
+
             <p><strong>Name:</strong> {profile?.name || "Not set"}</p>
             <p><strong>Email:</strong> {profile?.email || "Not set"}</p>
             <p><strong>Location:</strong> {profile?.location || "Not set"}</p>
@@ -109,6 +123,10 @@ export default function ProfileDropdown() {
             <p><strong>Field:</strong> {profile?.field || "Not set"}</p>
             <p><strong>Skills:</strong> {profile?.skills || "Not set"}</p>
             <p><strong>Bio:</strong> {profile?.bio || "Not set"}</p>
+
+            <button className="profile-logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         </div>
       )}
