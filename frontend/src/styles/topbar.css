@@ -1,10 +1,11 @@
+/* ── Topbar ───────────────────────────────────────────────── */
 .topbar {
-  height: 72px;
-  background: white;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  height: 68px;
+  background: #ffffff;
   display: flex;
   align-items: center;
   padding: 0 40px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
 }
 
@@ -13,32 +14,36 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
+/* ── Search ───────────────────────────────────────────────── */
 .search-input {
   flex: 1;
-  max-width: 400px;
+  max-width: 380px;
   padding: 10px 16px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   font-size: 14px;
   background: #f8fafc;
+  color: #0f172a;
   transition: border-color 0.2s, background 0.2s;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #3b82f6;
-  background: white;
+  background: #ffffff;
 }
 
 .search-input::placeholder {
   color: #94a3b8;
 }
 
-/* Profile button - pinned to top right */
-.topbar .profile-dropdown-wrap {
-  margin-left: auto;
+/* ── Profile area ─────────────────────────────────────────── */
+.profile-dropdown-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
