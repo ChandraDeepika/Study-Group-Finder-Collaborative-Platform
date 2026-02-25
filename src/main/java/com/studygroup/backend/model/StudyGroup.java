@@ -35,6 +35,10 @@ public class StudyGroup {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    // ✅ COURSE (NEW FIELD — THIS FIXES THE ERROR)
+    @Column(name = "course_id", nullable = false)
+    private Long courseId;
+
     // ===== GETTERS & SETTERS =====
 
     public Long getId() {
@@ -75,5 +79,14 @@ public class StudyGroup {
 
     public void setCreatedBy(User createdBy) {
         this.createdBy = createdBy;
+    }
+
+    // ✅ courseId getters/setters
+    public Long getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
     }
 }
