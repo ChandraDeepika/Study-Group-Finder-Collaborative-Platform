@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "../Auth.css";
 
 function Login() {
 
@@ -10,22 +11,47 @@ function Login() {
     password: ""
   });
 
+  const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const validate = () => {
+    let newErrors = {};
+
+    if (!form.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    if (!form.password) {
+      newErrors.password = "Password is required";
+    } else if (form.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(form.password)) {
+      newErrors.password = "Password must contain letters and numbers";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value
     });
+
+    setErrors({
+      ...errors,
+      [e.target.name]: ""
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email || !form.password) {
-      setMessage("Please enter both email and password.");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       const res = await fetch("http://localhost:8080/api/auth/login", {
@@ -34,113 +60,77 @@ function Login() {
         body: JSON.stringify(form),
       });
 
+      const data = await res.text();
+
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || "Login failed");
+        setMessage(data || "Login failed. Check credentials.");
+        setIsSuccess(false);
+        return;
       }
 
-      const user = await res.json(); // ✅ Backend returns User object
+      const user = JSON.parse(data);
 
-      // Store full user object
+      localStorage.setItem("token", user.token);
       localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("userId", String(user.id));
 
-      // Store user ID separately
-      localStorage.setItem("userId", user.id);
-
-      setMessage("Login successful!");
-
-      // Navigate to dashboard
+      setMessage("Login successful! Redirecting...");
+      setIsSuccess(true);
       setTimeout(() => navigate("/dashboard"), 500);
 
     } catch (err) {
       console.error(err);
-      setMessage("Login failed. Check credentials.");
+      setMessage(err.message || "Login failed. Check credentials.");
+      setIsSuccess(false);
     }
   };
 
   return (
+    <div className="auth-page">
+      <div className="auth-header">
+        <h1 className="auth-header-logo">📚 StudyConnect</h1>
+        <p className="auth-header-tagline">Connect. Collaborate. Succeed.</p>
+      </div>
 
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(to right,#5f9cff,#6ec6ff)"
-    }}>
+      <div className="auth-card">
+        <h2>Welcome back</h2>
+        <p className="auth-subtitle">Sign in to continue to your dashboard</p>
 
-      <div style={{
-        width: "420px",
-        background: "white",
-        padding: "40px",
-        borderRadius: "14px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-        textAlign: "center"
-      }}>
-
-        <h2 style={{marginBottom:"6px"}}>📚 Study Group Finder</h2>
-        <p style={{marginBottom:"25px",color:"#666"}}>
-          Connect. Collaborate. Succeed.
-        </p>
-
-        <form onSubmit={handleSubmit}>
-
+        <form onSubmit={handleSubmit} className="auth-form">
           <input
+            className="auth-input"
             type="email"
             name="email"
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            style={{
-              width:"100%",
-              padding:"12px",
-              marginBottom:"15px",
-              borderRadius:"8px",
-              border:"1px solid #ccc"
-            }}
           />
+          {errors.email && <p className="auth-error">{errors.email}</p>}
 
           <input
+            className="auth-input"
             type="password"
             name="password"
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            style={{
-              width:"100%",
-              padding:"12px",
-              marginBottom:"20px",
-              borderRadius:"8px",
-              border:"1px solid #ccc"
-            }}
           />
+          {errors.password && <p className="auth-error">{errors.password}</p>}
 
-          <button type="submit" style={{
-            width:"100%",
-            padding:"12px",
-            border:"none",
-            borderRadius:"8px",
-            background:"linear-gradient(to right,#2b8cff,#3db7ff)",
-            color:"white",
-            fontWeight:"bold",
-            cursor:"pointer"
-          }}>
-            Login
+          <button className="auth-button" type="submit">
+            Sign in
           </button>
-
         </form>
 
-        {message && <p style={{marginTop:"15px"}}>{message}</p>}
+        {message && (
+          <p className={isSuccess ? "auth-success" : "auth-error"} style={{ marginTop: "12px" }}>
+            {message}
+          </p>
+        )}
 
-        <p style={{marginTop:"18px"}}>
-          Don’t have an account?{" "}
-          <span
-            style={{color:"#2b8cff",cursor:"pointer"}}
-            onClick={()=>navigate("/register")}
-          >
-            Register
-          </span>
+        <p className="auth-link">
+          Don't have an account? <Link to="/register">Create one</Link>
         </p>
-
       </div>
     </div>
   );

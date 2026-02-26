@@ -5,11 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,13 +19,16 @@ import java.util.List;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
+    public JwtFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    // Skip filter entirely for auth endpoints
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/api/auth/");
+        return request.getServletPath().startsWith("/api/auth/");
     }
 
     @Override
@@ -38,31 +41,26 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-
             String token = header.substring(7);
-
             try {
-
                 String username = jwtUtil.extractUsername(token);
 
                 if (username != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
+                        SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    // ✅ VALIDATE TOKEN HERE
                     if (jwtUtil.validateToken(token, username)) {
-
                         UsernamePasswordAuthenticationToken auth =
                                 new UsernamePasswordAuthenticationToken(
                                         username,
                                         null,
                                         List.of(new SimpleGrantedAuthority("ROLE_USER"))
                                 );
-
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(auth);
                     }
                 }
-
             } catch (Exception e) {
+                // Invalid or expired token — Spring will return 403
                 System.out.println("JWT ERROR: " + e.getMessage());
             }
         }

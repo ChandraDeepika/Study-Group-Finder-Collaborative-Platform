@@ -2,23 +2,38 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function ProfileCard() {
+
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("token");
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
+
+    if (!token) {
+      navigate("/login");
       return;
     }
 
     const fetchProfile = async () => {
       try {
+
         const res = await fetch(
-          `http://localhost:8080/api/profile/${userId}`
+          "http://localhost:8080/api/profile/me",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
+
+        // 🔐 Token expired or invalid
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
 
         if (!res.ok) {
           throw new Error("Profile not found");
@@ -35,51 +50,52 @@ function ProfileCard() {
     };
 
     fetchProfile();
-  }, [userId]);
+  }, [token, navigate]);
 
   if (loading) {
-    return <div className="profile-card">Loading profile...</div>;
+    return (
+      <div className="profile-card">
+        <h3>Loading profile...</h3>
+      </div>
+    );
   }
 
   if (!profile) {
     return (
       <div className="profile-card">
         <h2>No Profile Found</h2>
-        <button
-          className="edit-profile-btn"
-          onClick={() => navigate("/profile")}
-        >
-          Create Profile
-        </button>
+        <p>Please complete your registration details.</p>
       </div>
     );
   }
 
   return (
     <div className="profile-card">
+
       <h2>Profile Summary</h2>
 
-      {profile?.profileImage && (
-        <img
-          src={`http://localhost:8080/uploads/${profile.profileImage}`}
-          alt="Profile"
-          className="profile-summary-image"
-        />
-      )}
+      <div className="profile-summary-image-wrap">
+        {profile.profileImageBase64 ? (
+          <img
+            src={profile.profileImageBase64}
+            alt="Profile"
+            className="profile-summary-image"
+          />
+        ) : (
+          <div className="profile-summary-image-placeholder">
+            <span>{profile.name?.charAt(0)?.toUpperCase() || "?"}</span>
+          </div>
+        )}
+      </div>
 
-      <p><strong>Name:</strong> {profile?.name || "Not set"}</p>
-      <p><strong>Location:</strong> {profile?.location || "Not set"}</p>
-      <p><strong>Education:</strong> {profile?.educationLevel || "Not set"}</p>
-      <p><strong>Field:</strong> {profile?.field || "Not set"}</p>
-      <p><strong>Skills:</strong> {profile?.skills || "Not set"}</p>
-      <p><strong>Bio:</strong> {profile?.bio || "Not set"}</p>
+      <p><strong>Name:</strong> {profile.name || "Not set"}</p>
+      <p><strong>Email:</strong> {profile.email || "Not set"}</p>
+      <p><strong>Location:</strong> {profile.location || "Not set"}</p>
+      <p><strong>Education:</strong> {profile.educationLevel || "Not set"}</p>
+      <p><strong>Field:</strong> {profile.field || "Not set"}</p>
+      <p><strong>Skills:</strong> {profile.skills || "Not set"}</p>
+      <p><strong>Bio:</strong> {profile.bio || "Not set"}</p>
 
-      <button
-        className="edit-profile-btn"
-        onClick={() => navigate("/profile")}
-      >
-        Edit Profile
-      </button>
     </div>
   );
 }

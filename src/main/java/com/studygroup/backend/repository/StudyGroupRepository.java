@@ -8,19 +8,15 @@ import java.util.List;
 
 public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
-    // 🔍 Filter by group privacy (PUBLIC / PRIVATE)
+    // Filter by group privacy (PUBLIC / PRIVATE)
     List<StudyGroup> findByPrivacy(GroupPrivacy privacy);
 
-    // 🔍 Search by name or description (case-insensitive)
+    // Search by name or description (case-insensitive)
     List<StudyGroup> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
             String nameKeyword,
             String descriptionKeyword
     );
 
-    /*
-     * 🔍 Filter by course
-     * ⚠️ ENABLE THIS ONLY IF StudyGroup HAS:
-     * private Course course;
-     */
-   List<StudyGroup> findByCourse_Id(Long courseId);
+    // 🔍 Filter by course (works with @ManyToOne Course course)
+    List<StudyGroup> findByCourse_Id(Long courseId);
 }

@@ -1,87 +1,186 @@
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(120deg, #667eea, #764ba2);
+/* Auth pages - matches Dashboard aesthetic */
+.auth-page {
   min-height: 100vh;
+  background: #f5f7fa;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  padding: 50px 24px;
 }
 
-.auth-container {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.auth-card {
-  background: white;
-  padding: 45px;
-  border-radius: 14px;
-  width: 400px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+.auth-header {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 30px;
   text-align: center;
 }
 
-.auth-logo {
-  font-size: 22px;
-  font-weight: bold;
-  color: #1e40af;
-  margin-bottom: 5px;
+.auth-header-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
 }
 
-.auth-subtitle {
+.auth-header-tagline {
+  font-size: 15px;
+  color: #64748b;
+}
+
+/* Auth card - matches .welcome-card / .content-card */
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  padding: 45px 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+}
+
+.auth-card-register {
+  max-width: 700px;
+}
+
+.auth-card h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.auth-card .auth-subtitle {
   font-size: 14px;
   color: #64748b;
-  margin-bottom: 25px;
+  margin-bottom: 28px;
+}
+
+/* Form elements */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .auth-input {
   width: 100%;
-  padding: 12px;
-  margin: 12px 0;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  transition: 0.3s;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 15px;
+  color: #0f172a;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
 }
 
 .auth-input:focus {
+  border-color: #3b82f6;
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+.auth-input[type="file"] {
+  padding: 12px;
+  cursor: pointer;
+}
+
+.auth-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* Buttons */
 .auth-button {
   width: 100%;
-  padding: 12px;
-  background: #2563eb;
+  padding: 14px;
+  margin-top: 10px;
   border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
   color: white;
   font-size: 16px;
-  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .auth-button:hover {
-  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
 }
 
+.auth-button:active {
+  transform: translateY(0);
+}
+
+/* Errors */
 .auth-error {
-  color: #dc2626;
-  font-size: 14px;
-  margin-top: 10px;
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 12px;
+  margin-top: -4px;
 }
 
+/* Links */
 .auth-link {
-  margin-top: 15px;
-  display: block;
+  margin-top: 24px;
+  text-align: center;
   font-size: 14px;
-  color: #2563eb;
+  color: #64748b;
+}
+
+.auth-link a {
+  color: #3b82f6;
+  font-weight: 600;
   text-decoration: none;
 }
 
-.auth-link:hover {
+.auth-link a:hover {
   text-decoration: underline;
+}
+
+/* Success message */
+.auth-success {
+  color: #10b981;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+/* Register layout - two columns on larger screens */
+.auth-register-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+@media (max-width: 640px) {
+  .auth-register-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-register-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-register-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* File input styling */
+.auth-input[type="file"] {
+  font-size: 14px;
+  color: #64748b;
 }

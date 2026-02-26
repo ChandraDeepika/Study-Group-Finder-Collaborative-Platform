@@ -10,7 +10,7 @@ import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
 import com.studygroup.backend.dto.GroupSearchRequest;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
-import com.studygroup.backend.model.StudyGroup;
+//import com.studygroup.backend.model.StudyGroup;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.service.StudyGroupService;

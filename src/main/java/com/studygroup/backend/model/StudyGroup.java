@@ -20,12 +20,11 @@ public class StudyGroup {
     @Column(length = 500)
     private String description;
 
-    // 🔒 PUBLIC / PRIVATE
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GroupPrivacy privacy;
 
-    // 🆕 COURSE RELATION
+    // ✅ COURSE RELATION (Correct way)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;

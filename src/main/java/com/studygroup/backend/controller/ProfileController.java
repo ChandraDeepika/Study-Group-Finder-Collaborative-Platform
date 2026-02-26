@@ -1,52 +1,71 @@
-
 package com.studygroup.backend.controller;
 
-import com.studygroup.backend.dto.ProfileCreateRequest;
-import com.studygroup.backend.dto.ProfileUpdateRequest;
+import com.studygroup.backend.dto.ProfileResponse;
 import com.studygroup.backend.model.User;
-import com.studygroup.backend.service.ProfileService;
-import jakarta.validation.Valid;
+import com.studygroup.backend.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
 
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
 
-    private final ProfileService profileService;
+    @Autowired
+    private UserRepository userRepository;
 
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
-    }
-    
-    //GET PROFILE
-    @GetMapping
-    public ResponseEntity<User> getProfile(Authentication authentication){
-        return ResponseEntity.ok(
-            profileService.getProfile(authentication.getName())
-        );
+    // ✅ Get logged-in user's profile using JWT (includes profileImage from registration)
+    @GetMapping("/me")
+    public ProfileResponse getMyProfile(Authentication authentication) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+        return ProfileResponse.from(user);
     }
 
-    //CREATE PROFILE (first-time setup)
-    @PostMapping
-    public ResponseEntity<User> createProfile(
-            @RequestBody ProfileCreateRequest request,
-            Authentication authentication) {
-            
-        return ResponseEntity.ok(
-                profileService.createProfile(authentication.getName(), request)
-        );
-    }
-    
-    //UPDATE PROFILE 
-    @PutMapping
-    public ResponseEntity<User> updateProfile(
-            @Valid @RequestBody ProfileUpdateRequest request,
-            Authentication authentication) {
+    // ✅ Serve profile image (authenticated) - ensures correct path
+    @GetMapping("/me/image")
+    public ResponseEntity<Resource> getMyProfileImage(Authentication authentication) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
 
-        return ResponseEntity.ok(
-                profileService.updateProfile(authentication.getName(), request)
-        );
+        String fileName = user.getProfileImage();
+        if (fileName == null || fileName.isBlank()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        File file = new File("uploads", fileName);
+        if (!file.exists() || !file.isFile()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new FileSystemResource(file);
+        String contentType = getContentType(fileName);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                .body(resource);
+    }
+
+    private String getContentType(String fileName) {
+        if (fileName == null) return "application/octet-stream";
+        String ext = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".")).toLowerCase() : "";
+        return switch (ext) {
+            case ".jpg", ".jpeg" -> "image/jpeg";
+            case ".png" -> "image/png";
+            case ".gif" -> "image/gif";
+            case ".webp" -> "image/webp";
+            default -> "application/octet-stream";
+        };
     }
 }

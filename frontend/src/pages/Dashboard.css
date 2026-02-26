@@ -77,6 +77,34 @@
   font-size: 18px;
 }
 
+/* Profile Summary Image */
+.profile-summary-image-wrap {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-summary-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e2e8f0;
+}
+
+.profile-summary-image-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 36px;
+  font-weight: 600;
+}
+
 .content-card ul {
   list-style: none;
   padding: 0;

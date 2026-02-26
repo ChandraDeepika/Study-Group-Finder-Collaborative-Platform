@@ -5,7 +5,7 @@ public class CreateGroupRequest {
     private String name;
     private String description;
     private String privacy; // PUBLIC / PRIVATE
-    private Long courseId;  // ✅ ADD THIS
+    private Long courseId;
 
     // getters
     public String getName() {
@@ -20,7 +20,7 @@ public class CreateGroupRequest {
         return privacy;
     }
 
-    public Long getCourseId() {        // ✅ ADD
+    public Long getCourseId() {
         return courseId;
     }
 
@@ -37,7 +37,7 @@ public class CreateGroupRequest {
         this.privacy = privacy;
     }
 
-    public void setCourseId(Long courseId) {   // ✅ ADD
+    public void setCourseId(Long courseId) {
         this.courseId = courseId;
     }
 }

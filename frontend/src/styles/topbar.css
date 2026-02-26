@@ -1,36 +1,49 @@
+/* ── Topbar ───────────────────────────────────────────────── */
 .topbar {
-  height: 70px;
-  background: white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  height: 68px;
+  background: #ffffff;
   display: flex;
   align-items: center;
+  padding: 0 40px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
-/* Center content inside topbar */
 .topbar-inner {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
+/* ── Search ───────────────────────────────────────────────── */
 .search-input {
-  padding: 8px 14px;
-  border-radius: 8px;
+  flex: 1;
+  max-width: 380px;
+  padding: 10px 16px;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
+  font-size: 14px;
+  background: #f8fafc;
+  color: #0f172a;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.user-info {
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+/* ── Profile area ─────────────────────────────────────────── */
+.profile-dropdown-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  flex-shrink: 0;
 }
