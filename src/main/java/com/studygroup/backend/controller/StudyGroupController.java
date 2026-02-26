@@ -65,12 +65,13 @@ public class StudyGroupController {
         service.handleJoinRequest(groupId, admin.getId(), request);
     }
 
-    @GetMapping
-public List<StudyGroup> getAllGroups() {
+   @GetMapping
+public List<GroupResponse> getAllGroups() {
     return service.searchGroups(new GroupSearchRequest());
 }
+
 @GetMapping("/{id}")
-public StudyGroup getGroup(@PathVariable Long id) {
+public GroupResponse getGroup(@PathVariable Long id) {
     return service.getGroupById(id);
 }
 
