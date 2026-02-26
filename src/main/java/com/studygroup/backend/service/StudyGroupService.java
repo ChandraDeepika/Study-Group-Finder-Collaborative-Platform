@@ -93,7 +93,8 @@ public class StudyGroupService {
                 savedGroup.getId(),
                 savedGroup.getName(),
                 savedGroup.getDescription(),
-                creator.getEmail()
+                creator.getEmail(),
+                savedGroup.getPrivacy().name()   // ✅ ADDED
         );
     }
 
@@ -161,7 +162,8 @@ public class StudyGroupService {
                         g.getId(),
                         g.getName(),
                         g.getDescription(),
-                        g.getCreatedBy().getEmail()
+                        g.getCreatedBy().getEmail(),
+                        g.getPrivacy().name()   // ✅ ADDED
                 ))
                 .toList();
     }
@@ -178,7 +180,8 @@ public class StudyGroupService {
                 g.getId(),
                 g.getName(),
                 g.getDescription(),
-                g.getCreatedBy().getEmail()
+                g.getCreatedBy().getEmail(),
+                g.getPrivacy().name()   // ✅ ADDED
         );
     }
 
