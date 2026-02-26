@@ -20,24 +20,24 @@ public class StudyGroup {
     @Column(length = 500)
     private String description;
 
-    // 🔒 PUBLIC / PRIVATE
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GroupPrivacy privacy;
 
-    // 🕒 Auto-managed creation timestamp
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    // ✅ COURSE RELATION (Correct way)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     // 👤 Group creator
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    // ✅ COURSE (NEW FIELD — THIS FIXES THE ERROR)
-    @Column(name = "course_id", nullable = false)
-    private Long courseId;
+    // 🕒 Auto-managed creation timestamp
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     // ===== GETTERS & SETTERS =====
 
@@ -69,8 +69,12 @@ public class StudyGroup {
         this.privacy = privacy;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(Course course) {
+        this.course = course;
     }
 
     public User getCreatedBy() {
@@ -81,12 +85,7 @@ public class StudyGroup {
         this.createdBy = createdBy;
     }
 
-    // ✅ courseId getters/setters
-    public Long getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(Long courseId) {
-        this.courseId = courseId;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

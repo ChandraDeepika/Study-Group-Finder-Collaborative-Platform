@@ -3,17 +3,16 @@ package com.studygroup.backend.controller;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.studygroup.backend.dto.CreateGroupRequest;
 import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
+import com.studygroup.backend.dto.GroupSearchRequest;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
+//import com.studygroup.backend.model.StudyGroup;
+import com.studygroup.backend.model.User;
+import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.service.StudyGroupService;
 
 @RestController
@@ -21,9 +20,12 @@ import com.studygroup.backend.service.StudyGroupService;
 public class StudyGroupController {
 
     private final StudyGroupService service;
+    private final UserRepository userRepo;   // ✅ needed for admin lookup
 
-    public StudyGroupController(StudyGroupService service) {
+    public StudyGroupController(StudyGroupService service,
+                                UserRepository userRepo) {
         this.service = service;
+        this.userRepo = userRepo;
     }
 
     // =========================
@@ -37,6 +39,15 @@ public class StudyGroupController {
     }
 
     // =========================
+    // ✅ JOIN GROUP (NEW)
+    // =========================
+    @PostMapping("/{groupId}/join")
+    public String joinGroup(@PathVariable Long groupId) {
+
+        return service.joinGroup(groupId);
+    }
+
+    // =========================
     // APPROVE / REJECT JOIN REQUEST
     // =========================
     @PostMapping("/{groupId}/join-requests")
@@ -45,11 +56,24 @@ public class StudyGroupController {
             @RequestBody JoinRequestActionRequest request,
             Authentication authentication) {
 
-        // NOTE: authentication.getName() must represent userId (as per your service design)
-        Long adminId = Long.parseLong(authentication.getName());
+        // get admin via email (consistent with service)
+        String email = authentication.getName();
 
-        service.handleJoinRequest(groupId, adminId, request);
+        User admin = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        service.handleJoinRequest(groupId, admin.getId(), request);
     }
+
+   @GetMapping
+public List<GroupResponse> getAllGroups() {
+    return service.searchGroups(new GroupSearchRequest());
+}
+
+@GetMapping("/{id}")
+public GroupResponse getGroup(@PathVariable Long id) {
+    return service.getGroupById(id);
+}
 
     // =========================
     // GET GROUP MEMBERS

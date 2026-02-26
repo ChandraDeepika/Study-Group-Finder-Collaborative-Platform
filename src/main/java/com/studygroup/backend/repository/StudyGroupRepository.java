@@ -17,6 +17,6 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
             String descriptionKeyword
     );
 
-    // NOTE: findByCourseId removed — add it back only if StudyGroup entity
-    // has a @ManyToOne Course course field with a corresponding course_id column.
+    // 🔍 Filter by course (works with @ManyToOne Course course)
+    List<StudyGroup> findByCourse_Id(Long courseId);
 }

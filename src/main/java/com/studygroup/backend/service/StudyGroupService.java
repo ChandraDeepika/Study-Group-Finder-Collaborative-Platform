@@ -11,12 +11,14 @@ import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
 import com.studygroup.backend.dto.GroupSearchRequest;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
+import com.studygroup.backend.model.Course;
 import com.studygroup.backend.model.StudyGroup;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.model.UserStudyGroup;
 import com.studygroup.backend.model.enums.GroupPrivacy;
 import com.studygroup.backend.model.enums.GroupRole;
 import com.studygroup.backend.model.enums.JoinStatus;
+import com.studygroup.backend.repository.CourseRepository;
 import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.repository.UserStudyGroupRepository;
@@ -27,15 +29,18 @@ public class StudyGroupService {
     private final StudyGroupRepository groupRepo;
     private final UserRepository userRepo;
     private final UserStudyGroupRepository userStudyGroupRepo;
+    private final CourseRepository courseRepo;
 
     public StudyGroupService(
             StudyGroupRepository groupRepo,
             UserRepository userRepo,
-            UserStudyGroupRepository userStudyGroupRepo) {
+            UserStudyGroupRepository userStudyGroupRepo,
+            CourseRepository courseRepo) {
 
         this.groupRepo = groupRepo;
         this.userRepo = userRepo;
         this.userStudyGroupRepo = userStudyGroupRepo;
+        this.courseRepo = courseRepo;
     }
 
     // =========================
@@ -47,9 +52,12 @@ public class StudyGroupService {
             throw new RuntimeException("Group name is required");
         }
 
-        String privacyValue = request.getPrivacy();
-        if (privacyValue == null || privacyValue.isBlank()) {
+        if (request.getPrivacy() == null || request.getPrivacy().isBlank()) {
             throw new RuntimeException("Group privacy is required");
+        }
+
+        if (request.getCourseId() == null) {
+            throw new RuntimeException("Course is required");
         }
 
         Authentication auth =
@@ -60,11 +68,15 @@ public class StudyGroupService {
         User creator = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        Course course = courseRepo.findById(request.getCourseId())
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
         StudyGroup group = new StudyGroup();
         group.setName(request.getName());
         group.setDescription(request.getDescription());
-        group.setPrivacy(GroupPrivacy.valueOf(privacyValue));
+        group.setPrivacy(GroupPrivacy.valueOf(request.getPrivacy()));
         group.setCreatedBy(creator);
+        group.setCourse(course);
 
         StudyGroup savedGroup = groupRepo.save(group);
 
@@ -86,19 +98,88 @@ public class StudyGroupService {
     }
 
     // =========================
-    // SEARCH GROUPS (BY PRIVACY)
+    // JOIN GROUP
     // =========================
-    public List<StudyGroup> searchGroups(GroupSearchRequest request) {
+    public String joinGroup(Long groupId) {
 
-        String privacy = request.getPrivacy(); // normalize once
+        Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
 
-        if (privacy != null && !privacy.isBlank()) {
-            return groupRepo.findByPrivacy(
-                    GroupPrivacy.valueOf(privacy)
-            );
+        String email = auth.getName();
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        StudyGroup group = groupRepo.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        var existing =
+                userStudyGroupRepo.findByStudyGroupIdAndUserId(groupId, user.getId());
+
+        if (existing.isPresent()) {
+
+            if (existing.get().getStatus() == JoinStatus.APPROVED)
+                return "You are already a member";
+
+            if (existing.get().getStatus() == JoinStatus.PENDING)
+                return "Join request already pending";
         }
 
-        return groupRepo.findAll();
+        UserStudyGroup membership = new UserStudyGroup();
+        membership.setUser(user);
+        membership.setStudyGroup(group);
+        membership.setRole(GroupRole.MEMBER);
+
+        if (group.getPrivacy() == GroupPrivacy.PUBLIC) {
+            membership.setStatus(JoinStatus.APPROVED);
+            userStudyGroupRepo.save(membership);
+            return "Joined successfully";
+        }
+
+        membership.setStatus(JoinStatus.PENDING);
+        userStudyGroupRepo.save(membership);
+
+        return "Join request sent to admin";
+    }
+
+    // =========================
+    // LIST ALL GROUPS
+    // =========================
+    public List<GroupResponse> searchGroups(GroupSearchRequest request) {
+
+        List<StudyGroup> groups;
+
+        if (request.getPrivacy() != null && !request.getPrivacy().isBlank()) {
+            groups = groupRepo.findByPrivacy(
+                    GroupPrivacy.valueOf(request.getPrivacy()));
+        } else {
+            groups = groupRepo.findAll();
+        }
+
+        return groups.stream()
+                .map(g -> new GroupResponse(
+                        g.getId(),
+                        g.getName(),
+                        g.getDescription(),
+                        g.getCreatedBy().getEmail()
+                ))
+                .toList();
+    }
+
+    // =========================
+    // GET GROUP BY ID
+    // =========================
+    public GroupResponse getGroupById(Long id) {
+
+        StudyGroup g = groupRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        return new GroupResponse(
+                g.getId(),
+                g.getName(),
+                g.getDescription(),
+                g.getCreatedBy().getEmail()
+        );
     }
 
     // =========================
@@ -109,7 +190,7 @@ public class StudyGroupService {
             Long adminId,
             JoinRequestActionRequest request) {
 
-        final UserStudyGroup adminMembership =
+        UserStudyGroup adminMembership =
                 userStudyGroupRepo
                         .findByStudyGroupIdAndUserId(groupId, adminId)
                         .orElseThrow(() ->
@@ -119,7 +200,7 @@ public class StudyGroupService {
             throw new RuntimeException("Only admin can approve join requests");
         }
 
-        final UserStudyGroup memberMembership =
+        UserStudyGroup memberMembership =
                 userStudyGroupRepo
                         .findByStudyGroupIdAndUserId(groupId, request.getUserId())
                         .orElseThrow(() ->
