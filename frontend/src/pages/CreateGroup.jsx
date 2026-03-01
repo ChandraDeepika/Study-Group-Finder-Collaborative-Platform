@@ -10,7 +10,14 @@ export default function CreateGroup() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+const [courses, setCourses] = useState([]);
+const [courseId, setCourseId] = useState("");
 
+useEffect(() => {
+  api.get("/courses")
+     .then(res => setCourses(res.data))
+     .catch(err => console.error(err));
+}, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
