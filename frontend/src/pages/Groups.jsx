@@ -1,40 +1,75 @@
-import Layout from "../components/Layout";
-import "./courses.css";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 export default function Groups() {
-  const groups = [
-    { id: 1, title: "DSA Evening Batch", members: 24, topic: "Algorithms", active: true },
-    { id: 2, title: "OS Interview Prep", members: 18, topic: "Systems", active: true },
-    { id: 3, title: "Signals Crash Group", members: 12, topic: "Electronics", active: false },
-    { id: 4, title: "Networks Discussion", members: 30, topic: "Networking", active: true },
-  ];
+  const navigate = useNavigate();
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const fetchGroups = async () => {
+    try {
+      const res = await api.get("/groups");
+      setGroups(res.data);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to load groups");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoin = async (id) => {
+    try {
+      await api.post(`/groups/${id}/join`);
+      alert("Join request sent!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to join group");
+    }
+  };
+
+  if (loading) return <div style={{ padding: "40px" }}>Loading...</div>;
 
   return (
-    <Layout>
-      <div className="courses-wrapper">
-        <div className="page-header">
-          <h1>Study Groups</h1>
-          <p>Join and collaborate with other students</p>
-        </div>
+    <div style={{ padding: "40px" }}>
+      <h2>Study Groups</h2>
 
-        <div className="courses-grid">
-          {groups.map((group) => (
-            <div className="course-card" key={group.id}>
-              <div className="course-card-top">
-                <span className="course-tag">{group.topic}</span>
-                <h3>{group.title}</h3>
-                <div className="group-meta">
-                  <span className="member-count">👥 {group.members} members</span>
-                  {group.active && <span className="active-badge">Active</span>}
-                </div>
-              </div>
-              <div className="course-card-bottom">
-                <button className="primary-btn">Join Group</button>
-              </div>
-            </div>
-          ))}
+      <button
+        onClick={() => navigate("/create-group")}
+        style={{
+          marginBottom: "20px",
+          padding: "10px",
+          backgroundColor: "#16a34a",
+          color: "white",
+          border: "none",
+        }}
+      >
+        + Create Group
+      </button>
+
+      {groups.map((group) => (
+        <div
+          key={group.id}
+          style={{
+            border: "1px solid #ccc",
+            padding: "15px",
+            marginBottom: "10px",
+            cursor: "pointer",
+          }}
+        >
+          <h3 onClick={() => navigate(`/groups/${group.id}`)}>
+            {group.name}
+          </h3>
+          <p>{group.description}</p>
+
+          <button onClick={() => handleJoin(group.id)}>Join</button>
         </div>
-      </div>
-    </Layout>
+      ))}
+    </div>
   );
 }
