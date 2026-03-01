@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../services/api";
 
 export default function CreateGroup() {
@@ -8,8 +8,18 @@ export default function CreateGroup() {
     privacy: "PUBLIC",
   });
 
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Fetch courses on mount
+  useEffect(() => {
+    api.get("/courses")
+      .then(res => setCourses(res.data))
+      .catch(err => console.error("Failed to fetch courses:", err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,6 +29,10 @@ export default function CreateGroup() {
       return setError("Group name is required");
     }
 
+    if (!courseId) {
+      return setError("Please select a course");
+    }
+
     try {
       setLoading(true);
 
@@ -26,15 +40,18 @@ export default function CreateGroup() {
         name: form.name,
         description: form.description,
         privacy: form.privacy,
+        courseId: Number(courseId), // IMPORTANT
       });
 
       alert("Group created successfully!");
 
+      // Reset form
       setForm({
         name: "",
         description: "",
         privacy: "PUBLIC",
       });
+      setCourseId("");
 
     } catch (err) {
       setError(
@@ -54,6 +71,7 @@ export default function CreateGroup() {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <form onSubmit={handleSubmit} style={styles.form}>
+        
         <input
           type="text"
           placeholder="Group Name"
@@ -72,6 +90,20 @@ export default function CreateGroup() {
           }
           style={styles.input}
         />
+
+        {/* NEW COURSE DROPDOWN */}
+        <select
+          value={courseId}
+          onChange={(e) => setCourseId(e.target.value)}
+          style={styles.input}
+        >
+          <option value="">Select Course</option>
+          {courses.map(course => (
+            <option key={course.id} value={course.id}>
+              {course.courseName}
+            </option>
+          ))}
+        </select>
 
         <select
           value={form.privacy}
