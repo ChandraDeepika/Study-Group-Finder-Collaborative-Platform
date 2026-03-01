@@ -48,6 +48,8 @@ public class StudyGroupService {
     // =========================
     public GroupResponse createGroup(CreateGroupRequest request) {
 
+        // ===== VALIDATIONS =====
+
         if (request.getName() == null || request.getName().isBlank()) {
             throw new RuntimeException("Group name is required");
         }
@@ -56,10 +58,20 @@ public class StudyGroupService {
             throw new RuntimeException("Group privacy is required");
         }
 
-        if (request.getCourseId() == null) {
-            throw new RuntimeException("Course is required");
+        // Prevent negative or zero course ID
+        if (request.getCourseId() == null || request.getCourseId() <= 0) {
+            throw new RuntimeException("Course ID must be a positive number");
         }
 
+        // Validate privacy enum safely
+        GroupPrivacy privacy;
+        try {
+            privacy = GroupPrivacy.valueOf(request.getPrivacy().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid privacy type. Use PUBLIC or PRIVATE");
+        }
+
+        // ===== AUTHENTICATION =====
         Authentication auth =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -71,10 +83,11 @@ public class StudyGroupService {
         Course course = courseRepo.findById(request.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
+        // ===== CREATE GROUP =====
         StudyGroup group = new StudyGroup();
         group.setName(request.getName());
         group.setDescription(request.getDescription());
-        group.setPrivacy(GroupPrivacy.valueOf(request.getPrivacy()));
+        group.setPrivacy(privacy);
         group.setCreatedBy(creator);
         group.setCourse(course);
 
@@ -144,7 +157,7 @@ public class StudyGroupService {
     }
 
     // =========================
-    // LIST ALL GROUPS
+    // SEARCH GROUPS
     // =========================
     public List<GroupResponse> searchGroups(GroupSearchRequest request) {
 
@@ -152,7 +165,7 @@ public class StudyGroupService {
 
         if (request.getPrivacy() != null && !request.getPrivacy().isBlank()) {
             groups = groupRepo.findByPrivacy(
-                    GroupPrivacy.valueOf(request.getPrivacy()));
+                    GroupPrivacy.valueOf(request.getPrivacy().toUpperCase()));
         } else {
             groups = groupRepo.findAll();
         }
