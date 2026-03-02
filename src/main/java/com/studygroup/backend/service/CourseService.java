@@ -27,8 +27,18 @@ public class CourseService {
         this.userCourseRepo = userCourseRepo;
     }
 
+    // All courses
     public List<Course> getAllCourses() {
         return courseRepo.findAll();
+    }
+
+    // Courses the logged-in user is enrolled in
+    public List<Course> getMyCourses(String email) {
+        User user = userRepo.findByEmail(email).orElseThrow();
+        return userCourseRepo.findByUser(user)
+                .stream()
+                .map(UserCourse::getCourse)
+                .toList();
     }
 
     @Transactional
@@ -36,17 +46,22 @@ public class CourseService {
         User user = userRepo.findByEmail(email).orElseThrow();
         Course course = courseRepo.findById(courseId).orElseThrow();
 
-        UserCourse uc = new UserCourse();
-        uc.setUser(user);
-        uc.setCourse(course);
+        // Prevent duplicate enrollment
+        boolean alreadyEnrolled = userCourseRepo.findByUser(user)
+                .stream()
+                .anyMatch(uc -> uc.getCourse().getId().equals(courseId));
 
-        userCourseRepo.save(uc);
+        if (!alreadyEnrolled) {
+            UserCourse uc = new UserCourse();
+            uc.setUser(user);
+            uc.setCourse(course);
+            userCourseRepo.save(uc);
+        }
     }
 
     @Transactional
     public void removeCourse(String email, Long courseId) {
         User user = userRepo.findByEmail(email).orElseThrow();
-
         userCourseRepo.findByUser(user).stream()
                 .filter(uc -> uc.getCourse().getId().equals(courseId))
                 .forEach(userCourseRepo::delete);

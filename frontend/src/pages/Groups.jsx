@@ -1,173 +1,174 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
 import api from "../services/api";
+import "../styles/Groups.css";
 
 function Groups() {
   const [groups, setGroups] = useState([]);
+  const [joinedGroupIds, setJoinedGroupIds] = useState([]);
+  const [pendingGroupIds, setPendingGroupIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchGroups();
+    fetchJoinedGroupIds();
+    fetchPendingGroupIds();
   }, []);
 
   const fetchGroups = async () => {
     try {
-      const res = await api.get("/groups");
+      const res = await api.get("/groups/filter", {
+        params: {
+          sortBy: "id",
+          sortDir: "desc",
+          page: 0,
+          size: 50,
+        },
+      });
       setGroups(res.data);
     } catch (err) {
       console.error("Error fetching groups:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const joinGroup = async (groupId) => {
+  const fetchJoinedGroupIds = async () => {
     try {
-      await api.post(`/groups/${groupId}/join`);
-      alert("Request Sent / Joined Successfully");
-    } catch (err) {
+      const res = await api.get("/groups/my-group-ids");
+      setJoinedGroupIds(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchPendingGroupIds = async () => {
+    try {
+      const res = await api.get("/groups/my-pending-ids");
+      setPendingGroupIds(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleJoin = async (id) => {
+    try {
+      const res = await api.post(`/groups/${id}/join`);
+      alert(res.data || "Join request sent!");
+      fetchGroups();
+      fetchJoinedGroupIds();
+      fetchPendingGroupIds();
+    } catch (error) {
+      console.error(error);
       alert("Failed to join group");
     }
   };
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>Study Groups</h1>
-<div style={{ marginBottom: "25px" }}>
-        <Link to="/create-group">
-          <button
-            style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#00b894",
-              color: "white",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            + Create New Group
-          </button>
-        </Link>
-      </div>
-        <div style={styles.grid}>
-          {groups.map((group) => (
-            <div key={group.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <h3 style={styles.groupName}>{group.name}</h3>
-                <span
-                  style={{
-                    ...styles.badge,
-                    backgroundColor:
-                      group.privacy === "PRIVATE"
-                        ? "#ffe5e5"
-                        : "#e6f7ff",
-                    color:
-                      group.privacy === "PRIVATE"
-                        ? "#d63031"
-                        : "#0984e3",
-                  }}
-                >
-                  {group.privacy}
-                </span>
-              </div>
+  const filteredGroups = groups.filter(
+    (group) =>
+      group.name?.toLowerCase().includes(search.toLowerCase()) ||
+      group.description?.toLowerCase().includes(search.toLowerCase())
+  );
 
-              <p style={styles.description}>{group.description}</p>
-
-              <div style={styles.buttonGroup}>
-                <button
-                  style={styles.joinBtn}
-                  onClick={() => joinGroup(group.id)}
-                >
-                  Join Group
-                </button>
-
-                <Link
-                  to={`/groups/${group.id}/members`}
-                  style={styles.membersBtn}
-                >
-                  View Members
-                </Link>
-              </div>
-            </div>
-          ))}
+  if (loading) {
+    return (
+      <Layout>
+        <div className="groups-wrapper">
+          <p>Loading...</p>
         </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="groups-wrapper">
+        {/* Header */}
+        <div className="page-header">
+          <h1>Study Groups</h1>
+          <p>Browse, search, and join study groups</p>
+        </div>
+
+        {/* Search + Create */}
+        <div className="groups-toolbar">
+          <input
+            type="text"
+            className="groups-search"
+            placeholder="🔍 Search groups by name or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <button
+            className="create-group-btn"
+            onClick={() => navigate("/create-group")}
+          >
+            + Create Group
+          </button>
+        </div>
+
+        {/* Groups Grid */}
+        {filteredGroups.length === 0 ? (
+          <div className="empty-state">No groups found.</div>
+        ) : (
+          <div className="groups-grid">
+            {filteredGroups.map((group) => {
+              const isMember = joinedGroupIds.includes(group.id);
+              const isPending = pendingGroupIds.includes(group.id);
+
+              return (
+                <div className="group-card" key={group.id}>
+                  <div className="group-card-top">
+                    <span className="group-privacy-tag">
+                      {group.privacy || "PUBLIC"}
+                    </span>
+
+                    <h3
+                      onClick={() => navigate(`/groups/${group.id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {group.name}
+                    </h3>
+
+                    <p className="group-description">
+                      {group.description}
+                    </p>
+                  </div>
+
+                  <div className="group-card-bottom">
+                    <div className="group-meta">
+                      <span className="group-admin">
+                        👤 {group.adminEmail}
+                      </span>
+                    </div>
+
+                    {isMember ? (
+                      <span className="joined-badge">✅ Joined</span>
+                    ) : isPending ? (
+                      <span className="pending-badge">
+                        ⏳ Request Sent to Admin
+                      </span>
+                    ) : (
+                      <button
+                        className="primary-btn"
+                        onClick={() => handleJoin(group.id)}
+                      >
+                        Join Group
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </div>
+    </Layout>
   );
 }
-
-const styles = {
-  page: {
-    backgroundColor: "#f4f6f9",
-    minHeight: "100vh",
-    padding: "40px 20px",
-  },
-  container: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-  },
-  title: {
-    fontSize: "32px",
-    fontWeight: "600",
-    marginBottom: "30px",
-    color: "#2d3436",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: "20px",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    transition: "0.3s",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "10px",
-  },
-  groupName: {
-    fontSize: "20px",
-    fontWeight: "600",
-  },
-  badge: {
-    padding: "4px 10px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "600",
-  },
-  description: {
-    fontSize: "14px",
-    color: "#636e72",
-    marginBottom: "15px",
-  },
-  buttonGroup: {
-    display: "flex",
-    gap: "10px",
-  },
-  joinBtn: {
-    flex: 1,
-    padding: "10px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#6c5ce7",
-    color: "white",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  membersBtn: {
-    flex: 1,
-    padding: "10px",
-    borderRadius: "8px",
-    textAlign: "center",
-    backgroundColor: "#dfe6e9",
-    color: "#2d3436",
-    textDecoration: "none",
-    fontWeight: "600",
-  },
-};
 
 export default Groups;

@@ -10,7 +10,10 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final String SECRET = "this_is_a_very_secure_secret_key_for_jwt_token_generation_2026";
+    private final String SECRET = "mySuperSecretJwtKeyThatIsAtLeastThirtyTwoCharacters!";
+
+    // 7 days in milliseconds
+    private static final long EXPIRATION_MS = 1000L * 60 * 60 * 24 * 7;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -18,12 +21,11 @@ public class JwtUtil {
 
     // ✅ GENERATE TOKEN WITH USER ID
     public String generateToken(String email, Long userId) {
-
         return Jwts.builder()
                 .setSubject(email)
                 .claim("userId", userId)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
+import AdminRequests from "./pages/AdminRequests";
 
 function App() {
   return (
@@ -19,10 +20,11 @@ function App() {
       <Route path="/groups/:groupId/members" element={<GroupMembers />} />
       <Route path="/groups/:id" element={<GroupDetail />} />
       <Route path="/create-group" element={<CreateGroup />} />
+      <Route path="/admin/requests" element={<AdminRequests />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
     </Routes>
   );
 }
 
-export default App;
+export default App; 
