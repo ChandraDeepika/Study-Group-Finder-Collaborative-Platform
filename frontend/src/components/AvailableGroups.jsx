@@ -1,87 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function AvailableGroups() {
-  const groupsData = [
-    { id: 1, name: "DSA Evening Batch", course: "Data Structures" },
-    { id: 2, name: "Signals Crash Group", course: "Signals & Systems" },
-    { id: 3, name: "OS Interview Prep", course: "Operating Systems" }
-  ];
+  const navigate = useNavigate();
+  const [myGroups, setMyGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [joinedGroups, setJoinedGroups] = useState([]);
+  useEffect(() => {
+    fetchMyGroups();
+  }, []);
 
-  const joinGroup = (id) => {
-    if (!joinedGroups.includes(id)) {
-      setJoinedGroups([...joinedGroups, id]);
+  const fetchMyGroups = async () => {
+    try {
+      const res = await api.get("/groups/my-groups");
+      setMyGroups(res.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const leaveGroup = (id) => {
-    setJoinedGroups(joinedGroups.filter(g => g !== id));
-  };
-
-  // 🔥 Filter available groups
-  const availableGroups = groupsData.filter(
-    (group) => !joinedGroups.includes(group.id)
-  );
-
-  const myGroups = groupsData.filter(
-    (group) => joinedGroups.includes(group.id)
-  );
+  if (loading) return <p className="dash-empty">Loading groups...</p>;
 
   return (
-    <div className="peer-card">
-      <h2>👥 Study Groups</h2>
-
-      {/* Joined Groups */}
-      <h3 style={{ marginBottom: "10px" }}>My Groups</h3>
-
-      {myGroups.length === 0 && <p>No groups joined yet.</p>}
-
-      <ul>
-        {myGroups.map((group) => (
-          <li key={group.id}>
-            <div>
-              <strong>{group.name}</strong>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
-                {group.course}
-              </p>
+    <div className="dash-list">
+      {myGroups.length === 0 ? (
+        <p className="dash-empty">No groups joined yet.</p>
+      ) : (
+        myGroups.map((group) => (
+          <div
+            className="dash-list-item clickable"
+            key={group.id}
+            onClick={() => navigate(`/groups/${group.id}`)}
+          >
+            <div className="dash-list-left">
+              <div className="dash-list-icon group-bg">👥</div>
+              <div>
+                <p className="dash-list-title">{group.name}</p>
+                <p className="dash-list-sub">{group.adminEmail}</p>
+              </div>
             </div>
-
-            <button
-              style={{ background: "#ef4444" }}
-              onClick={() => leaveGroup(group.id)}
-            >
-              Leave
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {/* Available Groups */}
-      <h3 style={{ marginTop: "30px", marginBottom: "10px" }}>
-        Available Groups
-      </h3>
-
-      {availableGroups.length === 0 && (
-        <p>All groups joined ✅</p>
+            <span className={`dash-pill ${group.privacy === "PRIVATE" ? "private-pill" : "public-pill"}`}>
+              {group.privacy}
+            </span>
+          </div>
+        ))
       )}
 
-      <ul>
-        {availableGroups.map((group) => (
-          <li key={group.id}>
-            <div>
-              <strong>{group.name}</strong>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
-                {group.course}
-              </p>
-            </div>
-
-            <button onClick={() => joinGroup(group.id)}>
-              Join
-            </button>
-          </li>
-        ))}
-      </ul>
+      <button className="dash-browse-btn" onClick={() => navigate("/groups")}>
+        Browse All Groups →
+      </button>
     </div>
   );
 }
