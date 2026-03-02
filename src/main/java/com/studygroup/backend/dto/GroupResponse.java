@@ -1,5 +1,8 @@
 package com.studygroup.backend.dto;
 
+import com.studygroup.backend.model.enums.GroupRole;
+import com.studygroup.backend.model.enums.JoinStatus;
+
 public class GroupResponse {
 
     private Long id;
@@ -7,6 +10,8 @@ public class GroupResponse {
     private String description;
     private String adminEmail;
     private String privacy;   // ✅ ADDED
+     private JoinStatus joinStatus;   // NEW
+    private GroupRole role;
 
     public GroupResponse(Long id,
                          String name,
