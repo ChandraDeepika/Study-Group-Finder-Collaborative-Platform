@@ -22,7 +22,10 @@ public interface UserStudyGroupRepository
 
     List<UserStudyGroup> findByUserId(Long userId);
 
-    // Optimized: filter by user + status in DB (uses idx_usg_user_status index)
+    // ✅ FIX ADDED HERE
+    long countByUserId(Long userId);
+
+    // Optimized: filter by user + status
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.studyGroup g " +
            "JOIN FETCH g.createdBy " +
@@ -31,7 +34,7 @@ public interface UserStudyGroupRepository
             @Param("userId") Long userId,
             @Param("status") JoinStatus status);
 
-    // Optimized: filter by user + role + status in DB
+    // Optimized: filter by user + role + status
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.studyGroup g " +
            "JOIN FETCH g.createdBy " +
@@ -41,7 +44,7 @@ public interface UserStudyGroupRepository
             @Param("role") GroupRole role,
             @Param("status") JoinStatus status);
 
-    // Optimized: get members with user data (avoids N+1 on user)
+    // Optimized: get members with user data
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.user " +
            "WHERE m.studyGroup.id = :groupId")
