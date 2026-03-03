@@ -1,14 +1,8 @@
 package com.studygroup.backend.service;
 
 import com.studygroup.backend.model.Course;
-import com.studygroup.backend.model.User;
-import com.studygroup.backend.model.UserCourse;
 import com.studygroup.backend.repository.CourseRepository;
-import com.studygroup.backend.repository.UserCourseRepository;
-import com.studygroup.backend.repository.UserRepository;
-import lombok.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,54 +10,23 @@ import java.util.List;
 public class CourseService {
 
     private final CourseRepository courseRepo;
-    private final UserRepository userRepo;
-    private final UserCourseRepository userCourseRepo;
 
-    public CourseService(CourseRepository courseRepo,
-                         UserRepository userRepo,
-                         UserCourseRepository userCourseRepo) {
+    public CourseService(CourseRepository courseRepo) {
         this.courseRepo = courseRepo;
-        this.userRepo = userRepo;
-        this.userCourseRepo = userCourseRepo;
     }
 
-    // All courses
+    // =============================
+    // GET ALL COURSES
+    // =============================
     public List<Course> getAllCourses() {
         return courseRepo.findAll();
     }
 
-    // Courses the logged-in user is enrolled in
-    public List<Course> getMyCourses(String email) {
-        User user = userRepo.findByEmail(email).orElseThrow();
-        return userCourseRepo.findByUser(user)
-                .stream()
-                .map(UserCourse::getCourse)
-                .toList();
-    }
-
-    @Transactional
-    public void addCourse(String email, @NonNull Long courseId) {
-        User user = userRepo.findByEmail(email).orElseThrow();
-        Course course = courseRepo.findById(courseId).orElseThrow();
-
-        // Prevent duplicate enrollment
-        boolean alreadyEnrolled = userCourseRepo.findByUser(user)
-                .stream()
-                .anyMatch(uc -> uc.getCourse().getId().equals(courseId));
-
-        if (!alreadyEnrolled) {
-            UserCourse uc = new UserCourse();
-            uc.setUser(user);
-            uc.setCourse(course);
-            userCourseRepo.save(uc);
-        }
-    }
-
-    @Transactional
-    public void removeCourse(String email, Long courseId) {
-        User user = userRepo.findByEmail(email).orElseThrow();
-        userCourseRepo.findByUser(user).stream()
-                .filter(uc -> uc.getCourse().getId().equals(courseId))
-                .forEach(userCourseRepo::delete);
+    // =============================
+    // GET COURSE BY ID
+    // =============================
+    public Course getCourseById(Long id) {
+        return courseRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
     }
 }
