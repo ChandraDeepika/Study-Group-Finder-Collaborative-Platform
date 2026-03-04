@@ -1,7 +1,7 @@
+
 package com.studygroup.backend.dto;
 
-import com.studygroup.backend.model.Course;
-import com.studygroup.backend.model.User;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +9,11 @@ import java.util.List;
 
 @Getter
 @Setter
+@AllArgsConstructor
 public class DashboardResponse {
-    private List<Course> enrolledCourses;
-    private List<User> suggestedPeers;
+
+    private long enrolledCoursesCount;
+    private long joinedGroupsCount;
+    private List<String> suggestedPeers;
+    private List<String> recentActivity;
 }

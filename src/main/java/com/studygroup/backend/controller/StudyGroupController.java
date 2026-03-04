@@ -2,13 +2,16 @@ package com.studygroup.backend.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.studygroup.backend.dto.CreateGroupRequest;
 import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
-import com.studygroup.backend.dto.GroupSearchRequest;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.repository.UserRepository;
@@ -27,16 +30,25 @@ public class StudyGroupController {
         this.userRepo = userRepo;
     }
 
+    // =========================
+    // CREATE GROUP
+    // =========================
     @PostMapping
     public GroupResponse createGroup(@RequestBody CreateGroupRequest request) {
         return service.createGroup(request);
     }
 
+    // =========================
+    // JOIN GROUP
+    // =========================
     @PostMapping("/{groupId}/join")
     public String joinGroup(@PathVariable Long groupId) {
         return service.joinGroup(groupId);
     }
 
+    // =========================
+    // APPROVE / REJECT JOIN
+    // =========================
     @PostMapping("/{groupId}/join-requests")
     public void handleJoinRequest(
             @PathVariable Long groupId,
@@ -46,56 +58,68 @@ public class StudyGroupController {
         String email = authentication.getName();
         User admin = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
         service.handleJoinRequest(groupId, admin.getId(), request);
     }
 
-    @GetMapping
-    public List<GroupResponse> getAllGroups() {
-        return service.searchGroups(new GroupSearchRequest());
-    }
-
-    // Now uses sorting + pagination properly
-    @GetMapping("/filter")
-    public List<GroupResponse> filterGroups(
+    // =========================
+    // ADVANCED SEARCH (Specification Based)
+    // =========================
+    @GetMapping("/search")
+    public Page<GroupResponse> searchGroups(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String privacy,
             @RequestParam(required = false) Long courseId,
-            @RequestParam(required = false, defaultValue = "id") String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDir,
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "50") int size) {
+            @RequestParam(required = false) Integer minMembers,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
 
-        return service.filterGroups(keyword, privacy, courseId, sortBy, sortDir, page, size);
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return service.searchGroups(
+                keyword,
+                privacy,
+                courseId,
+                minMembers,
+                pageable
+        );
     }
 
-    @GetMapping("/my-group-ids")
-    public List<Long> getMyGroupIds() {
-        return service.getJoinedGroupIds();
-    }
-
-    @GetMapping("/my-pending-ids")
-    public List<Long> getMyPendingIds() {
-        return service.getPendingGroupIds();
-    }
-
+    // =========================
+    // MY GROUPS
+    // =========================
     @GetMapping("/my-groups")
     public List<GroupResponse> getMyGroups() {
         return service.getMyGroups();
     }
 
-    @GetMapping("/my")
+    @GetMapping("/my-admin-groups")
     public List<GroupResponse> getMyAdminGroups() {
         return service.getMyAdminGroups();
     }
+    @GetMapping("/my-pending-ids")
+public List<Long> getMyPendingGroupIds() {
+    return service.getMyPendingGroupIds();
+}
 
-    // ⚠️ /{id} MUST be LAST
-    @GetMapping("/{id}")
-    public GroupResponse getGroup(@PathVariable Long id) {
-        return service.getGroupById(id);
-    }
-
+    // =========================
+    // GET GROUP MEMBERS
+    // =========================
     @GetMapping("/{groupId}/members")
     public List<GroupMemberResponse> getMembers(@PathVariable Long groupId) {
         return service.getGroupMembers(groupId);
+    }
+
+    // ⚠️ KEEP THIS LAST
+    @GetMapping("/{id}")
+    public GroupResponse getGroup(@PathVariable Long id) {
+        return service.getGroupById(id);
     }
 }

@@ -3,9 +3,8 @@ package com.studygroup.backend.service;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import com.studygroup.backend.dto.CreateGroupRequest;
 import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
-import com.studygroup.backend.dto.GroupSearchRequest;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
 import com.studygroup.backend.model.Course;
 import com.studygroup.backend.model.StudyGroup;
@@ -26,6 +24,7 @@ import com.studygroup.backend.repository.CourseRepository;
 import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.repository.UserStudyGroupRepository;
+import com.studygroup.backend.specification.StudyGroupSpecification;
 
 @Service
 public class StudyGroupService {
@@ -47,7 +46,9 @@ public class StudyGroupService {
         this.courseRepo = courseRepo;
     }
 
-    // ── Helper ────────────────────────────────────────────────
+    // =========================
+    // HELPER
+    // =========================
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userRepo.findByEmail(auth.getName())
@@ -92,13 +93,13 @@ public class StudyGroupService {
             throw new RuntimeException("Group privacy is required");
 
         if (request.getCourseId() == null || request.getCourseId() <= 0)
-            throw new RuntimeException("Course ID must be a positive number");
+            throw new RuntimeException("Valid Course ID required");
 
         GroupPrivacy privacy;
         try {
             privacy = GroupPrivacy.valueOf(request.getPrivacy().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid privacy type. Use PUBLIC or PRIVATE");
+        } catch (Exception e) {
+            throw new RuntimeException("Privacy must be PUBLIC or PRIVATE");
         }
 
         User creator = getCurrentUser();
@@ -115,13 +116,13 @@ public class StudyGroupService {
 
         StudyGroup savedGroup = groupRepo.save(group);
 
-        UserStudyGroup creatorMembership = new UserStudyGroup();
-        creatorMembership.setUser(creator);
-        creatorMembership.setStudyGroup(savedGroup);
-        creatorMembership.setRole(GroupRole.ADMIN);
-        creatorMembership.setStatus(JoinStatus.APPROVED);
+        UserStudyGroup membership = new UserStudyGroup();
+        membership.setUser(creator);
+        membership.setStudyGroup(savedGroup);
+        membership.setRole(GroupRole.ADMIN);
+        membership.setStatus(JoinStatus.APPROVED);
 
-        userStudyGroupRepo.save(creatorMembership);
+        userStudyGroupRepo.save(membership);
 
         return toResponse(savedGroup);
     }
@@ -136,11 +137,12 @@ public class StudyGroupService {
         StudyGroup group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        var existing = userStudyGroupRepo.findByStudyGroupIdAndUserId(groupId, user.getId());
+        var existing = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, user.getId());
 
         if (existing.isPresent()) {
             if (existing.get().getStatus() == JoinStatus.APPROVED)
-                return "You are already a member";
+                return "Already a member";
             if (existing.get().getStatus() == JoinStatus.PENDING)
                 return "Join request already pending";
         }
@@ -158,59 +160,36 @@ public class StudyGroupService {
 
         membership.setStatus(JoinStatus.PENDING);
         userStudyGroupRepo.save(membership);
-
-        return "Join request sent to admin";
+        return "Join request sent";
     }
 
     // =========================
-    // SEARCH GROUPS (used by GET /api/groups)
+    // ADVANCED SEARCH (Specification Based)
     // =========================
-    public List<GroupResponse> searchGroups(GroupSearchRequest request) {
-
-        GroupPrivacy privacy = null;
-        if (request.getPrivacy() != null && !request.getPrivacy().isBlank()) {
-            privacy = GroupPrivacy.valueOf(request.getPrivacy().toUpperCase());
-        }
-
-        // Single optimized DB query instead of findAll + Java filter
-        List<StudyGroup> groups = groupRepo.filterGroups(
-                privacy,
-                request.getCourseId(),
-                request.getKeyword()
-        );
-
-        return groups.stream().map(this::toResponse).toList();
-    }
-
-    // =========================
-    // FILTER GROUPS (with sorting + pagination)
-    // =========================
-    public List<GroupResponse> filterGroups(
-            String keyword, String privacy, Long courseId,
-            String sortBy, String sortDir, int page, int size) {
+    public Page<GroupResponse> searchGroups(
+            String keyword,
+            String privacy,
+            Long courseId,
+            Integer minMembers,
+            Pageable pageable
+    ) {
 
         GroupPrivacy privacyEnum = null;
         if (privacy != null && !privacy.isBlank()) {
             privacyEnum = GroupPrivacy.valueOf(privacy.toUpperCase());
         }
 
-        String sortField = switch (sortBy != null ? sortBy : "id") {
-            case "name" -> "name";
-            case "createdAt" -> "createdAt";
-            case "privacy" -> "privacy";
-            default -> "id";
-        };
+        Specification<StudyGroup> spec =
+                StudyGroupSpecification.filter(
+                        keyword,
+                        privacyEnum,
+                        courseId,
+                        minMembers
+                );
 
-        Sort sort = "asc".equalsIgnoreCase(sortDir)
-                ? Sort.by(sortField).ascending()
-                : Sort.by(sortField).descending();
+        Page<StudyGroup> results = groupRepo.findAll(spec, pageable);
 
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<StudyGroup> results = groupRepo.filterGroupsPaged(
-                privacyEnum, courseId, keyword, pageable);
-
-        return results.stream().map(this::toResponse).toList();
+        return results.map(this::toResponse);
     }
 
     // =========================
@@ -223,79 +202,81 @@ public class StudyGroupService {
     }
 
     // =========================
-    // GET JOINED GROUP IDS (optimized — single indexed query)
-    // =========================
-    public List<Long> getJoinedGroupIds() {
-        User user = getCurrentUser();
-        return userStudyGroupRepo.findByUserIdAndStatus(user.getId(), JoinStatus.APPROVED)
-                .stream()
-                .map(m -> m.getStudyGroup().getId())
-                .toList();
-    }
-
-    // =========================
-    // GET PENDING GROUP IDS (optimized — single indexed query)
-    // =========================
-    public List<Long> getPendingGroupIds() {
-        User user = getCurrentUser();
-        return userStudyGroupRepo.findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
-                .stream()
-                .map(m -> m.getStudyGroup().getId())
-                .toList();
-    }
-
-    // =========================
-    // GET MY GROUPS (optimized — JOIN FETCH, no N+1)
+    // GET MY GROUPS
     // =========================
     public List<GroupResponse> getMyGroups() {
         User user = getCurrentUser();
-        return userStudyGroupRepo.findByUserIdAndStatus(user.getId(), JoinStatus.APPROVED)
+        return userStudyGroupRepo
+                .findByUserIdAndStatus(user.getId(), JoinStatus.APPROVED)
                 .stream()
                 .map(m -> toResponse(m.getStudyGroup()))
                 .toList();
     }
 
     // =========================
-    // GET MY ADMIN GROUPS (optimized — single indexed query)
+    // GET MY ADMIN GROUPS
     // =========================
     public List<GroupResponse> getMyAdminGroups() {
+
         User user = getCurrentUser();
-        return userStudyGroupRepo.findByUserIdAndRoleAndStatus(
-                        user.getId(), GroupRole.ADMIN, JoinStatus.APPROVED)
+
+        return userStudyGroupRepo
+                .findByUserIdAndRoleAndStatus(
+                        user.getId(),
+                        GroupRole.ADMIN,
+                        JoinStatus.APPROVED
+                )
                 .stream()
                 .map(m -> toResponse(m.getStudyGroup()))
                 .toList();
     }
+    // =========================
+// GET MY PENDING GROUP IDS
+// =========================
+public List<Long> getMyPendingGroupIds() {
+
+    User user = getCurrentUser();
+
+    return userStudyGroupRepo
+            .findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
+            .stream()
+            .map(m -> m.getStudyGroup().getId())
+            .toList();
+}
 
     // =========================
-    // APPROVE / REJECT JOIN REQUEST
+    // APPROVE / REJECT JOIN
     // =========================
-    public void handleJoinRequest(Long groupId, Long adminId, JoinRequestActionRequest request) {
+    public void handleJoinRequest(
+            Long groupId,
+            Long adminId,
+            JoinRequestActionRequest request) {
 
-        UserStudyGroup adminMembership = userStudyGroupRepo
+        UserStudyGroup admin = userStudyGroupRepo
                 .findByStudyGroupIdAndUserId(groupId, adminId)
-                .orElseThrow(() -> new RuntimeException("Admin is not a group member"));
+                .orElseThrow(() -> new RuntimeException("Not a member"));
 
-        if (adminMembership.getRole() != GroupRole.ADMIN)
-            throw new RuntimeException("Only admin can approve join requests");
+        if (admin.getRole() != GroupRole.ADMIN)
+            throw new RuntimeException("Only admin can approve");
 
-        UserStudyGroup memberMembership = userStudyGroupRepo
+        UserStudyGroup member = userStudyGroupRepo
                 .findByStudyGroupIdAndUserId(groupId, request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Join request not found"));
 
         if (request.isApprove()) {
-            memberMembership.setStatus(JoinStatus.APPROVED);
-            userStudyGroupRepo.save(memberMembership);
+            member.setStatus(JoinStatus.APPROVED);
+            userStudyGroupRepo.save(member);
         } else {
-            userStudyGroupRepo.delete(memberMembership);
+            userStudyGroupRepo.delete(member);
         }
     }
 
     // =========================
-    // GET GROUP MEMBERS (optimized — JOIN FETCH, no N+1)
+    // GET GROUP MEMBERS
     // =========================
     public List<GroupMemberResponse> getGroupMembers(Long groupId) {
-        return userStudyGroupRepo.findByStudyGroupIdWithUser(groupId)
+        return userStudyGroupRepo
+                .findByStudyGroupIdWithUser(groupId)
                 .stream()
                 .map(m -> {
                     User u = m.getUser();
@@ -314,4 +295,5 @@ public class StudyGroupService {
                 })
                 .toList();
     }
+
 }
