@@ -1,47 +1,101 @@
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import "./courses.css";
 
 export default function Courses() {
-  const courses = [
-    { id: 1, title: "Data Structures", tag: "CS Core", progress: 68 },
-    { id: 2, title: "Operating Systems", tag: "CS Core", progress: 45 },
-    { id: 3, title: "Computer Networks", tag: "Networking", progress: 80 },
-    { id: 4, title: "Signals & Systems", tag: "Electronics", progress: 30 },
-  ];
+
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+
+    const fetchCourses = async () => {
+
+      try {
+
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(
+          "http://localhost:8080/api/user-courses/my",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        const data = await response.json();
+
+        setCourses(data);
+
+      } catch (error) {
+
+        console.error("Error fetching courses", error);
+
+      }
+
+    };
+
+    fetchCourses();
+
+  }, []);
 
   return (
     <Layout>
       <div className="courses-wrapper">
+
         <div className="page-header">
           <h1>Courses</h1>
           <p>Browse and manage your enrolled courses</p>
         </div>
 
         <div className="courses-grid">
-          {courses.map((course) => (
-            <div className="course-card" key={course.id}>
+
+          {courses.map((enrollment) => (
+
+            <div className="course-card" key={enrollment.id}>
+
               <div className="course-card-top">
-                <span className="course-tag">{course.tag}</span>
-                <h3>{course.title}</h3>
+
+               <span className="course-tag">
+  {enrollment.course.courseCode}
+</span>
+
+                <h3>{enrollment.course.courseName}</h3>
+
               </div>
+
               <div className="course-card-bottom">
+
                 <div className="progress-wrap">
+
                   <div className="progress-label">
                     <span>Progress</span>
-                    <span>{course.progress}%</span>
+                    <span>{enrollment.progress}%</span>
                   </div>
+
                   <div className="progress-bar">
+
                     <div
                       className="progress-fill"
-                      style={{ width: `${course.progress}%` }}
+                      style={{ width: `${enrollment.progress}%` }}
                     />
+
                   </div>
+
                 </div>
-                <button className="primary-btn">Continue</button>
+
+                <button className="primary-btn">
+                  Continue
+                </button>
+
               </div>
+
             </div>
+
           ))}
+
         </div>
+
       </div>
     </Layout>
   );

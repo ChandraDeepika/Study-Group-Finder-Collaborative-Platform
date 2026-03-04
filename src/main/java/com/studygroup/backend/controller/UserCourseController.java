@@ -44,14 +44,10 @@ public class UserCourseController {
     // GET MY ENROLLED COURSES
     // ==========================================
     @GetMapping("/my")
-    public List<Course> getMyCourses(Authentication authentication) {
+public List<UserCourse> getMyCourses(Authentication authentication) {
 
-        return userCourseService
-                .getMyEnrollments(authentication.getName())
-                .stream()
-                .map(UserCourse::getCourse)
-                .toList();
-    }
+    return userCourseService.getMyEnrollments(authentication.getName());
+}
 
     // ==========================================
     // UPDATE COURSE PROGRESS
