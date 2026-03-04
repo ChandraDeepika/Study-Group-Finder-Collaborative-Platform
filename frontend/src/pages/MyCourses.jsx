@@ -3,41 +3,39 @@ import Layout from "../components/Layout";
 import api from "../services/api";
 import "./courses.css";
 
-export default function Courses() {
+export default function MyCourses() {
 
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
 
-    const fetchCourses = async () => {
+    const fetchMyCourses = async () => {
 
       try {
 
         const response = await api.get("/user-courses/my");
-
-        console.log("API Response:", response.data);
-
         setCourses(response.data);
 
       } catch (error) {
 
-        console.error("Error fetching courses", error);
+        console.error("Error fetching enrolled courses:", error);
 
       }
 
     };
 
-    fetchCourses();
+    fetchMyCourses();
 
   }, []);
 
   return (
     <Layout>
+
       <div className="courses-wrapper">
 
         <div className="page-header">
-          <h1>Courses</h1>
-          <p>Browse and manage your enrolled courses</p>
+          <h1>My Courses</h1>
+          <p>Your enrolled courses</p>
         </div>
 
         <div className="courses-grid">
@@ -99,6 +97,7 @@ export default function Courses() {
         </div>
 
       </div>
+
     </Layout>
   );
 }
