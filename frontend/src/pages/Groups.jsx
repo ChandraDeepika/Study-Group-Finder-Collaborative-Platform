@@ -1,75 +1,174 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
 import api from "../services/api";
+import "../styles/Groups.css";
 
-export default function Groups() {
-  const navigate = useNavigate();
+function Groups() {
   const [groups, setGroups] = useState([]);
+  const [joinedGroupIds, setJoinedGroupIds] = useState([]);
+  const [pendingGroupIds, setPendingGroupIds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchGroups();
+    fetchJoinedGroupIds();
+    fetchPendingGroupIds();
   }, []);
 
   const fetchGroups = async () => {
     try {
-      const res = await api.get("/groups");
+      const res = await api.get("/groups/filter", {
+        params: {
+          sortBy: "id",
+          sortDir: "desc",
+          page: 0,
+          size: 50,
+        },
+      });
       setGroups(res.data);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to load groups");
+    } catch (err) {
+      console.error("Error fetching groups:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchJoinedGroupIds = async () => {
+    try {
+      const res = await api.get("/groups/my-group-ids");
+      setJoinedGroupIds(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchPendingGroupIds = async () => {
+    try {
+      const res = await api.get("/groups/my-pending-ids");
+      setPendingGroupIds(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleJoin = async (id) => {
     try {
-      await api.post(`/groups/${id}/join`);
-      alert("Join request sent!");
+      const res = await api.post(`/groups/${id}/join`);
+      alert(res.data || "Join request sent!");
+      fetchGroups();
+      fetchJoinedGroupIds();
+      fetchPendingGroupIds();
     } catch (error) {
       console.error(error);
       alert("Failed to join group");
     }
   };
 
-  if (loading) return <div style={{ padding: "40px" }}>Loading...</div>;
+  const filteredGroups = groups.filter(
+    (group) =>
+      group.name?.toLowerCase().includes(search.toLowerCase()) ||
+      group.description?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="groups-wrapper">
+          <p>Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <div style={{ padding: "40px" }}>
-      <h2>Study Groups</h2>
-
-      <button
-        onClick={() => navigate("/create-group")}
-        style={{
-          marginBottom: "20px",
-          padding: "10px",
-          backgroundColor: "#16a34a",
-          color: "white",
-          border: "none",
-        }}
-      >
-        + Create Group
-      </button>
-
-      {groups.map((group) => (
-        <div
-          key={group.id}
-          style={{
-            border: "1px solid #ccc",
-            padding: "15px",
-            marginBottom: "10px",
-            cursor: "pointer",
-          }}
-        >
-          <h3 onClick={() => navigate(`/groups/${group.id}`)}>
-            {group.name}
-          </h3>
-          <p>{group.description}</p>
-
-          <button onClick={() => handleJoin(group.id)}>Join</button>
+    <Layout>
+      <div className="groups-wrapper">
+        {/* Header */}
+        <div className="page-header">
+          <h1>Study Groups</h1>
+          <p>Browse, search, and join study groups</p>
         </div>
-      ))}
-    </div>
+
+        {/* Search + Create */}
+        <div className="groups-toolbar">
+          <input
+            type="text"
+            className="groups-search"
+            placeholder="🔍 Search groups by name or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <button
+            className="create-group-btn"
+            onClick={() => navigate("/create-group")}
+          >
+            + Create Group
+          </button>
+        </div>
+
+        {/* Groups Grid */}
+        {filteredGroups.length === 0 ? (
+          <div className="empty-state">No groups found.</div>
+        ) : (
+          <div className="groups-grid">
+            {filteredGroups.map((group) => {
+              const isMember = joinedGroupIds.includes(group.id);
+              const isPending = pendingGroupIds.includes(group.id);
+
+              return (
+                <div className="group-card" key={group.id}>
+                  <div className="group-card-top">
+                    <span className="group-privacy-tag">
+                      {group.privacy || "PUBLIC"}
+                    </span>
+
+                    <h3
+                      onClick={() => navigate(`/groups/${group.id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {group.name}
+                    </h3>
+
+                    <p className="group-description">
+                      {group.description}
+                    </p>
+                  </div>
+
+                  <div className="group-card-bottom">
+                    <div className="group-meta">
+                      <span className="group-admin">
+                        👤 {group.adminEmail}
+                      </span>
+                    </div>
+
+                    {isMember ? (
+                      <span className="joined-badge">✅ Joined</span>
+                    ) : isPending ? (
+                      <span className="pending-badge">
+                        ⏳ Request Sent to Admin
+                      </span>
+                    ) : (
+                      <button
+                        className="primary-btn"
+                        onClick={() => handleJoin(group.id)}
+                      >
+                        Join Group
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
+
+export default Groups;
