@@ -21,8 +21,9 @@ function Navbar({ user }) {
       {/* Links */}
       <div className="nav-links">
         <NavLink to="/dashboard">Dashboard</NavLink>
-        <NavLink to="/courses">Courses</NavLink>
-        <NavLink to="/groups">Groups</NavLink>
+<NavLink to="/explore-courses">Explore Courses</NavLink>
+<NavLink to="/my-courses">My Courses</NavLink>
+<NavLink to="/groups">Groups</NavLink>
 
         <button onClick={handleLogout} className="logout-btn">
           Logout

@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-import Courses from "./pages/Courses";
+import ExploreCourses from "./pages/ExploreCourses";
+import MyCourses from "./pages/MyCourses";
+
 import Groups from "./pages/Groups";
 
 import GroupMembers from "./pages/GroupMembers";
@@ -13,9 +15,11 @@ import AdminRequests from "./pages/AdminRequests";
 function App() {
   return (
     <Routes>
+      
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/" element={<Dashboard />} />
-      <Route path="/courses" element={<Courses />} />
+     <Route path="/explore-courses" element={<ExploreCourses />} />
+<Route path="/my-courses" element={<MyCourses />} />
       <Route path="/groups" element={<Groups />} />
       <Route path="/groups/:groupId/members" element={<GroupMembers />} />
       <Route path="/groups/:id" element={<GroupDetail />} />

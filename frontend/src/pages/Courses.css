@@ -168,3 +168,34 @@
   font-size: 14px;
   text-align: center;
 }
+.leave-btn {
+  width: 100%;
+  padding: 10px 0;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.leave-btn:hover {
+  background: #dc2626;
+}
+.browse-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background:#f3f4f6;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.browse-btn:hover {
+  background: #2563eb;
+}

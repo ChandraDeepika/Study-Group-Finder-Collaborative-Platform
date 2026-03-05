@@ -56,13 +56,29 @@ public class StudyGroupService {
     }
 
     private GroupResponse toResponse(StudyGroup g) {
-        return new GroupResponse(
-                g.getId(),
-                g.getName(),
-                g.getDescription(),
-                g.getCreatedBy().getEmail(),
-                g.getPrivacy().name()
-        );
+
+    User currentUser = getCurrentUser();
+
+    var membership = userStudyGroupRepo
+            .findByStudyGroupIdAndUserId(g.getId(), currentUser.getId());
+
+    JoinStatus joinStatus = null;
+    GroupRole role = null;
+
+    if (membership.isPresent()) {
+        joinStatus = membership.get().getStatus();
+        role = membership.get().getRole();
+    }
+            return new GroupResponse(
+            g.getId(),
+            g.getName(),
+            g.getDescription(),
+            g.getCreatedBy().getEmail(),
+            g.getPrivacy().name(),
+            joinStatus,
+            role
+    );
+
     }
 
     // =========================
@@ -214,6 +230,19 @@ public class StudyGroupService {
                 .map(m -> toResponse(m.getStudyGroup()))
                 .toList();
     }
+    // =========================
+// GET MY PENDING GROUP IDS
+// =========================
+public List<Long> getMyPendingGroupIds() {
+
+    User user = getCurrentUser();
+
+    return userStudyGroupRepo
+            .findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
+            .stream()
+            .map(m -> m.getStudyGroup().getId())
+            .toList();
+}
 
     // =========================
     // APPROVE / REJECT JOIN
@@ -241,6 +270,16 @@ public class StudyGroupService {
             userStudyGroupRepo.delete(member);
         }
     }
+   // =========================
+// GET ADMIN PENDING REQUESTS
+// =========================
+public List<UserStudyGroup> getPendingRequestsForAdmin() {
+
+    User admin = getCurrentUser();
+
+    return userStudyGroupRepo
+            .findPendingRequestsForAdmin(admin.getId());
+}
 
     // =========================
     // GET GROUP MEMBERS

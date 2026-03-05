@@ -23,7 +23,7 @@ export default function Dashboard() {
         fetch("http://localhost:8080/api/courses/my", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:8080/api/groups/my-group-ids", {
+        fetch("http://localhost:8080/api/groups/my-groups", {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch("http://localhost:8080/api/groups/my-pending-ids", {
@@ -117,7 +117,14 @@ export default function Dashboard() {
                 <p>{courseCount} courses enrolled</p>
               </div>
             </div>
-            <CourseList onEnrol={fetchStats} />
+           <CourseList onEnrol={fetchStats} />
+
+<button
+  className="browse-btn"
+  onClick={() => navigate("/explore-courses")}
+>
+  Browse All Courses →
+</button>
           </div>
 
           <div className="dash-section-card">

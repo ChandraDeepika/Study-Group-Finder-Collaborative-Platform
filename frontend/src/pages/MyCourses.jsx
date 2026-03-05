@@ -3,47 +3,44 @@ import Layout from "../components/Layout";
 import api from "../services/api";
 import "./courses.css";
 
-export default function Courses() {
+export default function MyCourses() {
 
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
 
-    const fetchCourses = async () => {
+    const fetchMyCourses = async () => {
 
       try {
 
         const response = await api.get("/user-courses/my");
-
-        console.log("API Response:", response.data);
-
         setCourses(response.data);
 
       } catch (error) {
 
-        console.error("Error fetching courses", error);
+        console.error("Error fetching enrolled courses:", error);
 
       }
 
     };
 
-    fetchCourses();
+    fetchMyCourses();
 
   }, []);
 
-  // Leave course function
+  // ✅ Leave course
   const leaveCourse = async (courseId) => {
 
     try {
 
       await api.delete(`/user-courses/${courseId}`);
 
-      // remove course from UI
+      // remove from UI
       setCourses(prev =>
         prev.filter(enrollment => enrollment.course.id !== courseId)
       );
 
-      alert("Course removed successfully");
+      alert("You left the course");
 
     } catch (error) {
 
@@ -55,11 +52,12 @@ export default function Courses() {
 
   return (
     <Layout>
+
       <div className="courses-wrapper">
 
         <div className="page-header">
           <h1>My Courses</h1>
-          <p>Browse and manage your enrolled courses</p>
+          <p>Your enrolled courses</p>
         </div>
 
         <div className="courses-grid">
@@ -109,12 +107,13 @@ export default function Courses() {
                   <button
                     className="primary-btn"
                     onClick={() =>
-                      alert("You are enrolled in this course. Learning module will be added later.")
+                      alert("Learning module will be added later.")
                     }
                   >
                     Continue
                   </button>
 
+                  {/* ✅ Leave course */}
                   <button
                     className="leave-btn"
                     onClick={() => leaveCourse(enrollment.course.id)}
@@ -133,6 +132,7 @@ export default function Courses() {
         </div>
 
       </div>
+
     </Layout>
   );
 }

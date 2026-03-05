@@ -22,7 +22,7 @@ export default function AdminRequests() {
       setLoading(true);
       try {
         // Get groups the user is in
-        const myRes = await fetch("http://localhost:8080/api/groups/my", {
+        const myRes = await fetch("http://localhost:8080/api/groups/my-admin-groups", {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!myRes.ok) return;

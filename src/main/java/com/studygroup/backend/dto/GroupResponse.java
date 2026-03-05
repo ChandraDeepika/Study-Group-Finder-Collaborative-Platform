@@ -1,53 +1,46 @@
 package com.studygroup.backend.dto;
 
+import com.studygroup.backend.model.enums.GroupRole;
+import com.studygroup.backend.model.enums.JoinStatus;
+
 public class GroupResponse {
 
-private Long id;
+    private Long id;
+    private String name;
+    private String description;
+    private String adminEmail;
+    private String privacy;
+    private JoinStatus joinStatus;
+    private GroupRole role;
 
-private String name;
+    public GroupResponse(Long id,
+                         String name,
+                         String description,
+                         String adminEmail,
+                         String privacy,
+                         JoinStatus joinStatus,
+                         GroupRole role) {
 
-private String description;
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.adminEmail = adminEmail;
+        this.privacy = privacy;
+        this.joinStatus = joinStatus;
+        this.role = role;
+    }
 
-private String adminEmail;
+    public Long getId() { return id; }
 
-private String privacy;   // ✅ ADDED
+    public String getName() { return name; }
 
+    public String getDescription() { return description; }
 
+    public String getAdminEmail() { return adminEmail; }
 
-public GroupResponse(Long id,
+    public String getPrivacy() { return privacy; }
 
-                     String name,
+    public JoinStatus getJoinStatus() { return joinStatus; }
 
-                     String description,
-
-                     String adminEmail,
-
-                     String privacy) {
-
-
-
-    this.id = id;
-
-    this.name = name;
-
-    this.description = description;
-
-    this.adminEmail = adminEmail;
-
-    this.privacy = privacy;
-
-}
-
-
-
-public Long getId() { return id; }
-
-public String getName() { return name; }
-
-public String getDescription() { return description; }
-
-public String getAdminEmail() { return adminEmail; }
-
-public String getPrivacy() { return privacy; }   // ✅ ADDED
-
+    public GroupRole getRole() { return role; }
 }

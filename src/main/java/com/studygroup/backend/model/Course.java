@@ -1,5 +1,6 @@
 package com.studygroup.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 @Table(name = "courses")
 @Getter
 @Setter
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Course {
 
     @Id
@@ -15,6 +17,8 @@ public class Course {
     private Long id;
 
     private String courseCode;
+
     private String courseName;
+
     private String description;
 }

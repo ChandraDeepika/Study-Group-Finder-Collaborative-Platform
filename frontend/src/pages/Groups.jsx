@@ -10,7 +10,7 @@ function Groups() {
   const [pendingGroupIds, setPendingGroupIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
+const currentUserEmail = localStorage.getItem("email");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,31 +20,32 @@ function Groups() {
   }, []);
 
   const fetchGroups = async () => {
-    try {
-      const res = await api.get("/groups/filter", {
-        params: {
-          sortBy: "id",
-          sortDir: "desc",
-          page: 0,
-          size: 50,
-        },
-      });
-      setGroups(res.data);
-    } catch (err) {
-      console.error("Error fetching groups:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await api.get("/groups/search", {
+      params: {
+        sortBy: "id",
+        sortDir: "desc",
+        page: 0,
+        size: 50,
+      },
+    });
+    setGroups(res.data.content); // because backend returns Page<>
+  } catch (err) {
+    console.error("Error fetching groups:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchJoinedGroupIds = async () => {
-    try {
-      const res = await api.get("/groups/my-group-ids");
-      setJoinedGroupIds(res.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  try {
+    const res = await api.get("/groups/my-groups");
+    const ids = res.data.map((g) => g.id);
+    setJoinedGroupIds(ids);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const fetchPendingGroupIds = async () => {
     try {
@@ -117,53 +118,56 @@ function Groups() {
         ) : (
           <div className="groups-grid">
             {filteredGroups.map((group) => {
-              const isMember = joinedGroupIds.includes(group.id);
-              const isPending = pendingGroupIds.includes(group.id);
+  const isMember = joinedGroupIds.includes(group.id);
+  const isPending = pendingGroupIds.includes(group.id);
+  const isAdmin = group.adminEmail === currentUserEmail;
 
-              return (
-                <div className="group-card" key={group.id}>
-                  <div className="group-card-top">
-                    <span className="group-privacy-tag">
-                      {group.privacy || "PUBLIC"}
-                    </span>
+  return (
+    <div className="group-card" key={group.id}>
+      <div className="group-card-top">
+        <span className="group-privacy-tag">
+          {group.privacy || "PUBLIC"}
+        </span>
 
-                    <h3
-                      onClick={() => navigate(`/groups/${group.id}`)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      {group.name}
-                    </h3>
+        <h3
+          onClick={() => navigate(`/groups/${group.id}`)}
+          style={{ cursor: "pointer" }}
+        >
+          {group.name}
+        </h3>
 
-                    <p className="group-description">
-                      {group.description}
-                    </p>
-                  </div>
+        <p className="group-description">
+          {group.description}
+        </p>
+      </div>
 
-                  <div className="group-card-bottom">
-                    <div className="group-meta">
-                      <span className="group-admin">
-                        👤 {group.adminEmail}
-                      </span>
-                    </div>
+      <div className="group-card-bottom">
+        <div className="group-meta">
+          <span className="group-admin">
+            👤 {group.adminEmail}
+          </span>
+        </div>
 
-                    {isMember ? (
-                      <span className="joined-badge">✅ Joined</span>
-                    ) : isPending ? (
-                      <span className="pending-badge">
-                        ⏳ Request Sent to Admin
-                      </span>
-                    ) : (
-                      <button
-                        className="primary-btn"
-                        onClick={() => handleJoin(group.id)}
-                      >
-                        Join Group
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {isAdmin ? (
+          <span className="admin-badge">⭐ Admin</span>
+        ) : isMember ? (
+          <span className="joined-badge">✅ Joined</span>
+        ) : isPending ? (
+          <span className="pending-badge">
+            ⏳ Request Sent to Admin
+          </span>
+        ) : (
+          <button
+            className="primary-btn"
+            onClick={() => handleJoin(group.id)}
+          >
+            Join Group
+          </button>
+        )}
+      </div>
+    </div>
+  );
+})}
           </div>
         )}
       </div>
