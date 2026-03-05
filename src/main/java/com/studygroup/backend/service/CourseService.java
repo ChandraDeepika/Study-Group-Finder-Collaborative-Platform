@@ -2,6 +2,8 @@ package com.studygroup.backend.service;
 
 import com.studygroup.backend.model.Course;
 import com.studygroup.backend.repository.CourseRepository;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,4 +31,11 @@ public class CourseService {
         return courseRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
     }
+    public List<Course> getMyCourses() {
+    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return enrollmentRepository.findCoursesByUserId(user.getId());
+}
 }

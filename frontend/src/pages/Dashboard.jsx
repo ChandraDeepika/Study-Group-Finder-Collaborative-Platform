@@ -23,7 +23,7 @@ export default function Dashboard() {
         fetch("http://localhost:8080/api/courses/my", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:8080/api/groups/my-group-ids", {
+        fetch("http://localhost:8080/api/groups/my-groups", {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch("http://localhost:8080/api/groups/my-pending-ids", {
