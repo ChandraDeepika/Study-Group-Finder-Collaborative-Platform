@@ -117,7 +117,14 @@ export default function Dashboard() {
                 <p>{courseCount} courses enrolled</p>
               </div>
             </div>
-            <CourseList onEnrol={fetchStats} />
+           <CourseList onEnrol={fetchStats} />
+
+<button
+  className="browse-btn"
+  onClick={() => navigate("/explore-courses")}
+>
+  Browse All Courses →
+</button>
           </div>
 
           <div className="dash-section-card">
