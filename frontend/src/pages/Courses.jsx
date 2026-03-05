@@ -31,12 +31,34 @@ export default function Courses() {
 
   }, []);
 
+  // Leave course function
+  const leaveCourse = async (courseId) => {
+
+    try {
+
+      await api.delete(`/user-courses/${courseId}`);
+
+      // remove course from UI
+      setCourses(prev =>
+        prev.filter(enrollment => enrollment.course.id !== courseId)
+      );
+
+      alert("Course removed successfully");
+
+    } catch (error) {
+
+      console.error("Error leaving course", error);
+
+    }
+
+  };
+
   return (
     <Layout>
       <div className="courses-wrapper">
 
         <div className="page-header">
-          <h1>Courses</h1>
+          <h1>My Courses</h1>
           <p>Browse and manage your enrolled courses</p>
         </div>
 
@@ -84,8 +106,20 @@ export default function Courses() {
 
                   </div>
 
-                  <button className="primary-btn">
+                  <button
+                    className="primary-btn"
+                    onClick={() =>
+                      alert("You are enrolled in this course. Learning module will be added later.")
+                    }
+                  >
                     Continue
+                  </button>
+
+                  <button
+                    className="leave-btn"
+                    onClick={() => leaveCourse(enrollment.course.id)}
+                  >
+                    Leave Course
                   </button>
 
                 </div>
