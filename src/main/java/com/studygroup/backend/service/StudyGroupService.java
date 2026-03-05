@@ -270,6 +270,16 @@ public List<Long> getMyPendingGroupIds() {
             userStudyGroupRepo.delete(member);
         }
     }
+   // =========================
+// GET ADMIN PENDING REQUESTS
+// =========================
+public List<UserStudyGroup> getPendingRequestsForAdmin() {
+
+    User admin = getCurrentUser();
+
+    return userStudyGroupRepo
+            .findPendingRequestsForAdmin(admin.getId());
+}
 
     // =========================
     // GET GROUP MEMBERS

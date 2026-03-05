@@ -22,10 +22,11 @@ public interface UserStudyGroupRepository
 
     List<UserStudyGroup> findByUserId(Long userId);
 
-    // ✅ FIX ADDED HERE
     long countByUserId(Long userId);
 
-    // Optimized: filter by user + status
+    // =========================
+    // GET USER GROUPS BY STATUS
+    // =========================
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.studyGroup g " +
            "JOIN FETCH g.createdBy " +
@@ -34,7 +35,9 @@ public interface UserStudyGroupRepository
             @Param("userId") Long userId,
             @Param("status") JoinStatus status);
 
-    // Optimized: filter by user + role + status
+    // =========================
+    // GET USER ADMIN GROUPS
+    // =========================
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.studyGroup g " +
            "JOIN FETCH g.createdBy " +
@@ -44,10 +47,24 @@ public interface UserStudyGroupRepository
             @Param("role") GroupRole role,
             @Param("status") JoinStatus status);
 
-    // Optimized: get members with user data
+    // =========================
+    // GET GROUP MEMBERS
+    // =========================
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.user " +
            "WHERE m.studyGroup.id = :groupId")
     List<UserStudyGroup> findByStudyGroupIdWithUser(
             @Param("groupId") Long groupId);
+
+    // =========================
+    // ⭐ NEW: GET ADMIN PENDING REQUESTS
+    // =========================
+    @Query("SELECT m FROM UserStudyGroup m " +
+           "JOIN FETCH m.user u " +
+           "JOIN FETCH m.studyGroup g " +
+           "JOIN FETCH g.createdBy c " +
+           "WHERE g.createdBy.id = :adminId AND m.status = 'PENDING'")
+    List<UserStudyGroup> findPendingRequestsForAdmin(
+            @Param("adminId") Long adminId);
+
 }

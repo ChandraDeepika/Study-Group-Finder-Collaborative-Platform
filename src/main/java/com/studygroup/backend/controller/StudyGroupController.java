@@ -14,6 +14,7 @@ import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
 import com.studygroup.backend.model.User;
+import com.studygroup.backend.model.UserStudyGroup;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.service.StudyGroupService;
 
@@ -56,6 +57,7 @@ public class StudyGroupController {
             Authentication authentication) {
 
         String email = authentication.getName();
+
         User admin = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -63,7 +65,15 @@ public class StudyGroupController {
     }
 
     // =========================
-    // ADVANCED SEARCH (Specification Based)
+    // GET ADMIN JOIN REQUESTS
+    // =========================
+    @GetMapping("/admin/requests")
+    public List<UserStudyGroup> getAdminJoinRequests() {
+        return service.getPendingRequestsForAdmin();
+    }
+
+    // =========================
+    // ADVANCED SEARCH
     // =========================
     @GetMapping("/search")
     public Page<GroupResponse> searchGroups(
@@ -100,14 +110,21 @@ public class StudyGroupController {
         return service.getMyGroups();
     }
 
+    // =========================
+    // MY ADMIN GROUPS
+    // =========================
     @GetMapping("/my-admin-groups")
     public List<GroupResponse> getMyAdminGroups() {
         return service.getMyAdminGroups();
     }
+
+    // =========================
+    // MY PENDING GROUP IDS
+    // =========================
     @GetMapping("/my-pending-ids")
-public List<Long> getMyPendingGroupIds() {
-    return service.getMyPendingGroupIds();
-}
+    public List<Long> getMyPendingGroupIds() {
+        return service.getMyPendingGroupIds();
+    }
 
     // =========================
     // GET GROUP MEMBERS
