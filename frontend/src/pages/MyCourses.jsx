@@ -82,9 +82,12 @@ export default function MyCourses() {
 
                   </div>
 
-                  <button className="primary-btn">
-                    Continue
-                  </button>
+<button
+  className="primary-btn"
+  onClick={() => alert("You are enrolled in this course. Learning module will be added later.")}
+>
+  Continue
+</button>
 
                 </div>
 
