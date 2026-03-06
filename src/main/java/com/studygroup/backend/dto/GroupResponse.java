@@ -12,6 +12,8 @@ public class GroupResponse {
     private String privacy;
     private JoinStatus joinStatus;
     private GroupRole role;
+    private int memberCount;
+    private String courseName;
 
     public GroupResponse(Long id,
                          String name,
@@ -19,7 +21,9 @@ public class GroupResponse {
                          String adminEmail,
                          String privacy,
                          JoinStatus joinStatus,
-                         GroupRole role) {
+                         GroupRole role,
+                         int memberCount,
+                         String courseName) {
 
         this.id = id;
         this.name = name;
@@ -28,19 +32,17 @@ public class GroupResponse {
         this.privacy = privacy;
         this.joinStatus = joinStatus;
         this.role = role;
+        this.memberCount = memberCount;
+        this.courseName = courseName;
     }
 
     public Long getId() { return id; }
-
     public String getName() { return name; }
-
     public String getDescription() { return description; }
-
     public String getAdminEmail() { return adminEmail; }
-
     public String getPrivacy() { return privacy; }
-
     public JoinStatus getJoinStatus() { return joinStatus; }
-
     public GroupRole getRole() { return role; }
+    public int getMemberCount() { return memberCount; }
+    public String getCourseName() { return courseName; }
 }
