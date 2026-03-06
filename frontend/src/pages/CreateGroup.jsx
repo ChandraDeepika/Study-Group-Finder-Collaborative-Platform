@@ -16,7 +16,7 @@ export default function CreateGroup() {
 
   // Fetch courses on mount
   useEffect(() => {
-    api.get("/courses")
+    api.get("/courses/my")
       .then(res => setCourses(res.data))
       .catch(err => console.error("Failed to fetch courses:", err));
   }, []);
