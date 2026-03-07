@@ -9,11 +9,10 @@ A full-stack web application that helps students connect with peers taking the s
 
 # 👥 Team Members
 
-- Member 1 – Backend Developer  
-- Member 2 – Frontend Developer  
-- Member 3 – Backend Developer  
-- Member 4 – Frontend Developer  
-- Member 5 – Tester  
+- Ananya – Backend Developer and Database
+- Sourabh – Frontend Developer and Tester
+- Chandra Deepika – Backend Developer and Tester
+- Bhagyavathi – Frontend Developer  and Database
 
 ---
 
@@ -132,22 +131,121 @@ Make sure the following tools are installed:
 Clone the repository:
 
 ```bash
-git clone <your-repository-link>
+git clone <https://github.com/ChandraDeepika/Study-Group-Finder-Collaborative-Platform.git>
 cd study-group-finder
-
+```
 ## 🗄️ Database Setup
 
 Open MySQL and create a database:
 
 ```sql
 CREATE DATABASE study_group_platform;
+```
 
 Update the database credentials in:
 
+```
 backend/src/main/resources/application.properties
+```
 
 Example configuration:
 
+```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/study_group_platform
 spring.datasource.username=root
 spring.datasource.password=your_password
+```
+
+---
+
+## ▶ Running the Application
+
+### Start Backend
+
+```bash
+cd backend
+mvn clean
+mvn spring-boot:run
+```
+
+Backend runs at:
+
+```
+http://localhost:8080
+```
+
+---
+
+### Start Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Frontend runs at:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 📁 Project Structure
+
+```
+backend/
+│
+├── src/main/java/com/studygroup/backend/
+│   ├── config/
+│   ├── controller/
+│   ├── dto/
+│   ├── exception/
+│   ├── model/
+│   ├── repository/
+│   ├── service/
+│   ├── util/
+│   └── StudyGroupApplication.java
+│
+frontend/
+│
+├── src/
+│   ├── api/
+│   ├── assets/
+│   ├── components/
+│   ├── pages/
+│   ├── context/
+│   └── utils/
+```
+
+---
+
+## 🔒 Security Features
+
+- JWT-based authentication  
+- Role-based access control  
+- Password encryption using BCrypt  
+- Secure API communication  
+- Session validation  
+
+---
+
+## 🏆 Milestone 1 & 2 Outcomes
+
+- Fully functional authentication system  
+- User profile and academic course management  
+- Peer discovery based on courses  
+- Study group creation and joining system  
+- Course-based group search and filtering  
+
+---
+
+## 📌 Upcoming Features (Next Milestones)
+
+- Real-time group chat using WebSockets  
+- Shared document collaboration  
+- Study session scheduling with calendar  
+- Email / push notifications  
+- File sharing within study groups  
+- Group activity tracking  
