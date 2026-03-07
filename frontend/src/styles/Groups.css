@@ -7,7 +7,7 @@
   gap: 36px;
 }
 
-/* ── Toolbar (Search + Create) ─────────────────────────────── */
+/* ── Toolbar ──────────────────────────────────────────────── */
 .groups-toolbar {
   display: flex;
   gap: 16px;
@@ -19,7 +19,7 @@
   flex: 1;
   min-width: 220px;
   padding: 12px 18px;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   font-size: 14px;
   outline: none;
@@ -41,39 +41,48 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   white-space: nowrap;
 }
 
 .create-group-btn:hover {
   background: #15803d;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
 /* ── Grid ─────────────────────────────────────────────────── */
 .groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
 }
 
 /* ── Card ─────────────────────────────────────────────────── */
 .group-card {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 26px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 20px;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   border: 1px solid #f1f5f9;
+  overflow: hidden;
 }
 
 .group-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Card accent bar at top ───────────────────────────────── */
+.group-card::before {
+  content: "";
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+  width: 100%;
 }
 
 /* ── Card Top ─────────────────────────────────────────────── */
@@ -81,38 +90,53 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 22px 24px 16px;
+  flex: 1;
 }
 
+/* ── Privacy tag ──────────────────────────────────────────── */
 .group-privacy-tag {
-  display: inline-block;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 11px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
   padding: 4px 10px;
   border-radius: 20px;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   width: fit-content;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
 }
 
+.group-privacy-tag.private {
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+/* ── Card title ───────────────────────────────────────────── */
 .group-card h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.35;
+  transition: color 0.2s ease;
 }
 
 .group-card h3:hover {
   color: #2563eb;
 }
 
+/* ── Description ──────────────────────────────────────────── */
 .group-description {
   font-size: 13px;
-  color: #6b7280;
+  color: #64748b;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -123,15 +147,27 @@
 .group-card-bottom {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: auto;
+  gap: 12px;
+  padding: 14px 24px 22px;
+  border-top: 1px solid #f8fafc;
+  background: #fafbfc;
 }
 
+/* ── Meta row ─────────────────────────────────────────────── */
 .group-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-wrap: wrap;
+}
+
+.group-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .group-admin {
@@ -139,9 +175,16 @@
   color: #64748b;
 }
 
-/* ── Buttons & Badges ─────────────────────────────────────── */
+/* ── Divider between meta and button ─────────────────────── */
+.group-meta + * {
+  margin-top: 2px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
 .primary-btn {
-  padding: 10px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 20px;
   background: #2563eb;
   color: #ffffff;
   border: none;
@@ -149,45 +192,199 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   text-align: center;
+  letter-spacing: 0.2px;
 }
 
 .primary-btn:hover {
   background: #1d4ed8;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+/* ── Joined badge / View Group ────────────────────────────── */
 .joined-badge {
-  display: inline-block;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   background: #f0fdf4;
   color: #16a34a;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 18px;
+  padding: 11px 18px;
   border-radius: 10px;
-  border: 1px solid #bbf7d0;
+  border: 1.5px solid #bbf7d0;
   text-align: center;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  cursor: pointer;
+  letter-spacing: 0.2px;
 }
 
+.joined-badge:hover {
+  background: #dcfce7;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+  transform: translateY(-1px);
+}
+
+/* ── Pending badge ────────────────────────────────────────── */
 .pending-badge {
-  display: inline-block;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   background: #fffbeb;
   color: #d97706;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 18px;
+  padding: 11px 18px;
   border-radius: 10px;
-  border: 1px solid #fde68a;
+  border: 1.5px solid #fde68a;
   text-align: center;
+  letter-spacing: 0.2px;
+}
+
+/* ── Admin badge ──────────────────────────────────────────── */
+.admin-badge {
+  display: block;
+  width: 100%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1.5px solid #dbeafe;
+  text-align: center;
+  letter-spacing: 0.2px;
 }
 
 /* ── Empty State ──────────────────────────────────────────── */
 .empty-state {
   background: #f8fafc;
-  padding: 25px;
-  border-radius: 14px;
+  padding: 40px 25px;
+  border-radius: 16px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 15px;
   text-align: center;
+  border: 1px dashed #e2e8f0;
+}
+
+/* ── Page header ──────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.page-header p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── GroupDetail card ─────────────────────────────────────── */
+.group-card.detail-card {
+  padding: 26px;
+  border-radius: 18px;
+}
+
+/* ── Leave / Remove buttons ───────────────────────────────── */
+.leave-btn {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  background: transparent;
+  color: #ef4444;
+  border: 1.5px solid #ef4444;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leave-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.remove-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* ── Member rows ──────────────────────────────────────────── */
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  transition: background 0.2s ease;
+}
+
+.member-row:hover {
+  background: #f1f5f9;
+}
+
+.member-info strong {
+  font-size: 14px;
+  color: #111827;
+}
+
+.member-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.member-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.role-badge.admin {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.role-badge.member {
+  background: #f0fdf4;
+  color: #16a34a;
 }
