@@ -187,7 +187,7 @@ public class StudyGroupService {
                         minMembers
                 );
 
-        Page<StudyGroup> results = groupRepo.findAll(spec, pageable);
+        Page<StudyGroup> results = groupRepo.findAll(spec,pageable);
 
         return results.map(this::toResponse);
     }
@@ -230,19 +230,20 @@ public class StudyGroupService {
                 .map(m -> toResponse(m.getStudyGroup()))
                 .toList();
     }
+
     // =========================
-// GET MY PENDING GROUP IDS
-// =========================
-public List<Long> getMyPendingGroupIds() {
+    // GET MY PENDING GROUP IDS
+    // =========================
+    public List<Long> getMyPendingGroupIds() {
 
-    User user = getCurrentUser();
+        User user = getCurrentUser();
 
-    return userStudyGroupRepo
+        return userStudyGroupRepo
             .findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
             .stream()
             .map(m -> m.getStudyGroup().getId())
             .toList();
-}
+    }
 
     // =========================
     // APPROVE / REJECT JOIN
@@ -270,16 +271,16 @@ public List<Long> getMyPendingGroupIds() {
             userStudyGroupRepo.delete(member);
         }
     }
-   // =========================
-// GET ADMIN PENDING REQUESTS
-// =========================
-public List<UserStudyGroup> getPendingRequestsForAdmin() {
 
-    User admin = getCurrentUser();
+    // =========================
+    // GET ADMIN PENDING REQUESTS
+    // =========================
+    public List<UserStudyGroup> getPendingRequestsForAdmin() {
 
-    return userStudyGroupRepo
-            .findPendingRequestsForAdmin(admin.getId());
-}
+        User admin = getCurrentUser();
+
+        return userStudyGroupRepo.findPendingRequestsForAdmin(admin.getId());
+    }
 
     // =========================
     // GET GROUP MEMBERS
