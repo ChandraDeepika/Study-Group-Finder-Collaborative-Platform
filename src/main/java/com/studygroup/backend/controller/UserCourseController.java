@@ -3,6 +3,8 @@ package com.studygroup.backend.controller;
 import com.studygroup.backend.model.Course;
 import com.studygroup.backend.model.UserCourse;
 import com.studygroup.backend.service.UserCourseService;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,52 +24,90 @@ public class UserCourseController {
     // ENROLL IN COURSE
     // ==========================================
     @PostMapping("/enroll/{courseId}")
-    public String enrollCourse(Authentication authentication,
-                               @PathVariable Long courseId) {
+    public ResponseEntity<String> enrollCourse(Authentication authentication,
+                                               @PathVariable Long courseId) {
 
-        userCourseService.enrollCourse(authentication.getName(), courseId);
-        return "Successfully enrolled in course";
+        String email = authentication.getName();
+
+        userCourseService.enrollCourse(email, courseId);
+
+        return ResponseEntity.ok("Successfully enrolled in course");
     }
 
     // ==========================================
     // REMOVE ENROLLMENT
     // ==========================================
     @DeleteMapping("/{courseId}")
-    public String removeEnrollment(Authentication authentication,
-                                   @PathVariable Long courseId) {
+    public ResponseEntity<String> removeEnrollment(Authentication authentication,
+                                                   @PathVariable Long courseId) {
 
-        userCourseService.removeEnrollment(authentication.getName(), courseId);
-        return "Course removed successfully";
+        String email = authentication.getName();
+
+        userCourseService.removeEnrollment(email, courseId);
+
+        return ResponseEntity.ok("Course removed successfully");
     }
 
     // ==========================================
     // GET MY ENROLLED COURSES
     // ==========================================
     @GetMapping("/my")
-public List<UserCourse> getMyCourses(Authentication authentication) {
+    public ResponseEntity<List<Course>> getMyCourses(Authentication authentication) {
 
-    return userCourseService.getMyEnrollments(authentication.getName());
-}
+        String email = authentication.getName();
+
+        List<Course> courses = userCourseService
+                .getMyEnrollments(email)
+                .stream()
+                .map(UserCourse::getCourse)
+                .toList();
+
+        return ResponseEntity.ok(courses);
+    }
+
+    // ==========================================
+    // GET ENROLLED COURSES (NEW ENDPOINT)
+    // ==========================================
+    @GetMapping("/enrolled")
+    public ResponseEntity<List<Course>> getEnrolledCourses(Authentication authentication) {
+
+        String email = authentication.getName();
+
+        List<Course> courses = userCourseService
+                .getMyEnrollments(email)
+                .stream()
+                .map(UserCourse::getCourse)
+                .toList();
+
+        return ResponseEntity.ok(courses);
+    }
 
     // ==========================================
     // UPDATE COURSE PROGRESS
     // ==========================================
     @PutMapping("/{courseId}/progress")
-    public String updateProgress(Authentication authentication,
-                                 @PathVariable Long courseId,
-                                 @RequestParam int progress) {
+    public ResponseEntity<String> updateProgress(Authentication authentication,
+                                                 @PathVariable Long courseId,
+                                                 @RequestParam int progress) {
 
-        userCourseService.updateProgress(authentication.getName(), courseId, progress);
-        return "Progress updated successfully";
+        String email = authentication.getName();
+
+        userCourseService.updateProgress(email, courseId, progress);
+
+        return ResponseEntity.ok("Progress updated successfully");
     }
 
     // ==========================================
     // GET SINGLE ENROLLMENT DETAILS
     // ==========================================
     @GetMapping("/{courseId}")
-    public UserCourse getEnrollment(Authentication authentication,
-                                    @PathVariable Long courseId) {
+    public ResponseEntity<UserCourse> getEnrollment(Authentication authentication,
+                                                    @PathVariable Long courseId) {
 
-        return userCourseService.getEnrollment(authentication.getName(), courseId);
+        String email = authentication.getName();
+
+        UserCourse enrollment = userCourseService.getEnrollment(email, courseId);
+
+        return ResponseEntity.ok(enrollment);
     }
 }
