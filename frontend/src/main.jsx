@@ -5,7 +5,11 @@ import App from "./App";
 import "./styles/main.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      
+        <App />
+      
+    </BrowserRouter>
+  </React.StrictMode>
 );

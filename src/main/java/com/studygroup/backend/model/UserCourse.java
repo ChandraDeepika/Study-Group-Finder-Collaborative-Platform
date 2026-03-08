@@ -12,16 +12,16 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-    name = "user_courses",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "course_id"})
-    }
+        name = "user_courses",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "course_id"})
+        }
 )
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UserCourse {
 
     @Id
@@ -37,9 +37,9 @@ public class UserCourse {
     @JsonIgnore
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "course_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    //@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Course course;
 
     // =============================
@@ -59,9 +59,7 @@ public class UserCourse {
     // METADATA
     // =============================
 
-    @Column(nullable = false)
-    private LocalDateTime enrolledAt = LocalDateTime.now();
-
+    @Column(name = "last_accessed_at")
     private LocalDateTime lastAccessedAt;
 
     // =============================

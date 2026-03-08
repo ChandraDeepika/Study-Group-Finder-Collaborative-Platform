@@ -27,7 +27,7 @@ public class UserCourseService {
     }
 
     // =============================
-    // ENROLL COURSE
+    // ENROLL COURSE (USING EMAIL)
     // =============================
     @Transactional
     public void enrollCourse(String email, Long courseId) {
@@ -35,12 +35,27 @@ public class UserCourseService {
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Course course = courseRepo.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        enrollCourse(user.getId(), courseId);
+    }
 
-        if (userCourseRepo.existsByUserIdAndCourseId(user.getId(), courseId)) {
+    // =============================
+    // ENROLL COURSE (USING USER ID)
+    // =============================
+    @Transactional
+    public void enrollCourse(Long userId, Long courseId) {
+
+        boolean alreadyEnrolled =
+                userCourseRepo.existsByUserIdAndCourseId(userId, courseId);
+
+        if (alreadyEnrolled) {
             throw new RuntimeException("Already enrolled in this course");
         }
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Course course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
 
         UserCourse userCourse = new UserCourse();
         userCourse.setUser(user);

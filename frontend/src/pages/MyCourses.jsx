@@ -7,6 +7,7 @@ export default function MyCourses() {
 
   const [courses, setCourses] = useState([]);
 
+  // Fetch enrolled courses
   useEffect(() => {
 
     const fetchMyCourses = async () => {
@@ -14,7 +15,9 @@ export default function MyCourses() {
       try {
 
         const response = await api.get("/user-courses/my");
-        setCourses(response.data);
+
+        // API returns Course objects directly
+        setCourses(response.data || []);
 
       } catch (error) {
 
@@ -28,29 +31,30 @@ export default function MyCourses() {
 
   }, []);
 
-  // ✅ Leave course
+  // Leave course
   const leaveCourse = async (courseId) => {
 
     try {
 
       await api.delete(`/user-courses/${courseId}`);
 
-      // remove from UI
+      // remove course from UI immediately
       setCourses(prev =>
-        prev.filter(enrollment => enrollment.course.id !== courseId)
+        prev.filter(course => course.id !== courseId)
       );
 
       alert("You left the course");
 
     } catch (error) {
 
-      console.error("Error leaving course", error);
+      console.error("Error leaving course:", error);
 
     }
 
   };
 
   return (
+
     <Layout>
 
       <div className="courses-wrapper">
@@ -70,34 +74,35 @@ export default function MyCourses() {
 
           ) : (
 
-            courses.map((enrollment) => (
+            courses.map((course) => (
 
-              <div className="course-card" key={enrollment.id}>
+              <div className="course-card" key={course.id}>
 
                 <div className="course-card-top">
 
                   <span className="course-tag">
-                    {enrollment.course.courseCode}
+                    {course.courseCode}
                   </span>
 
-                  <h3>{enrollment.course.courseName}</h3>
+                  <h3>{course.courseName}</h3>
 
                 </div>
 
                 <div className="course-card-bottom">
 
+                  {/* Placeholder progress since API returns only course */}
                   <div className="progress-wrap">
 
                     <div className="progress-label">
                       <span>Progress</span>
-                      <span>{enrollment.progress}%</span>
+                      <span>0%</span>
                     </div>
 
                     <div className="progress-bar">
 
                       <div
                         className="progress-fill"
-                        style={{ width: `${enrollment.progress}%` }}
+                        style={{ width: "0%" }}
                       />
 
                     </div>
@@ -113,10 +118,9 @@ export default function MyCourses() {
                     Continue
                   </button>
 
-                  {/* ✅ Leave course */}
                   <button
                     className="leave-btn"
-                    onClick={() => leaveCourse(enrollment.course.id)}
+                    onClick={() => leaveCourse(course.id)}
                   >
                     Leave Course
                   </button>
@@ -134,5 +138,7 @@ export default function MyCourses() {
       </div>
 
     </Layout>
+
   );
+
 }
