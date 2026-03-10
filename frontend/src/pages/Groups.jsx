@@ -20,18 +20,17 @@ function Groups() {
   }, []);
 
   const fetchGroups = async () => {
-    try {
-      const res = await api.get("/groups/search", {
-        params: { sortBy: "id", sortDir: "desc", page: 0, size: 50 },
-      });
-      setGroups(res.data.content);
-    } catch (err) {
-      console.error("Error fetching groups:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  try {
+    const res = await api.get("/groups/search", {
+      params: { page: 0, size: 50 }
+    });
+    setGroups(res.data.content);
+  } catch (err) {
+    console.error("Error fetching groups:", err.response?.data || err);
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchJoinedGroupIds = async () => {
     try {
       const res = await api.get("/groups/my-groups");
