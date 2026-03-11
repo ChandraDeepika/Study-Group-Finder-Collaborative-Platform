@@ -12,6 +12,7 @@ import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
 import AdminRequests from "./pages/AdminRequests";
 //import AvailableCourses from "./pages/AvailableCourses";
+import ChatPage from "./pages/ChatPage";
 
 function App() {
   return (
@@ -29,6 +30,8 @@ function App() {
       <Route path="/admin/requests" element={<AdminRequests />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/chat" element={<ChatPage />} />
+      <Route path="/groups/:groupId/chat" element={<ChatPage />} />
     </Routes>
   );
 }

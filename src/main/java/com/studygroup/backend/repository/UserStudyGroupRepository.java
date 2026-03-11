@@ -30,9 +30,6 @@ public interface UserStudyGroupRepository
     // Count approved members in a group
     int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
 
-    // Count approved members in a group
-    int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
-
     // =========================
     // GET USER GROUPS BY STATUS
     // =========================
