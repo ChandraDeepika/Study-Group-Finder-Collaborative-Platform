@@ -24,11 +24,17 @@ public interface UserStudyGroupRepository
 
     long countByUserId(Long userId);
 
+    // =========================
+    // MEMBERSHIP VALIDATION (FOR CHAT SECURITY)
+    // =========================
+    boolean existsByUserIdAndStudyGroupIdAndStatus(
+            Long userId,
+            Long studyGroupId,
+            JoinStatus status
+    );
+
     // Delete all memberships for a group (used when deleting a group)
     void deleteAllByStudyGroupId(Long studyGroupId);
-
-    // Count approved members in a group
-    int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
 
     // Count approved members in a group
     int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
