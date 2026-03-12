@@ -27,15 +27,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     // Skip filter entirely for auth endpoints
     @Override
-    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+    protected boolean shouldNotFilter( HttpServletRequest request) {
         return request.getServletPath().startsWith("/api/auth/");
     }
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain chain)
+             HttpServletRequest request,
+             HttpServletResponse response,
+             FilterChain chain)
             throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");

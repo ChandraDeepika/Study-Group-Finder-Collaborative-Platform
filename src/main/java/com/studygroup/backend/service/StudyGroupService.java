@@ -56,29 +56,32 @@ public class StudyGroupService {
     }
 
     private GroupResponse toResponse(StudyGroup g) {
+        User currentUser = getCurrentUser();
+        var membership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(g.getId(), currentUser.getId());
 
-    User currentUser = getCurrentUser();
+        JoinStatus joinStatus = null;
+        GroupRole role = null;
 
-    var membership = userStudyGroupRepo
-            .findByStudyGroupIdAndUserId(g.getId(), currentUser.getId());
+        if (membership.isPresent()) {
+            joinStatus = membership.get().getStatus();
+            role = membership.get().getRole();
+        }
 
-    JoinStatus joinStatus = null;
-    GroupRole role = null;
+        int memberCount = userStudyGroupRepo.countByStudyGroupIdAndStatus(g.getId(), JoinStatus.APPROVED);
+        String courseName = g.getCourse() != null ? g.getCourse().getCourseName() : null;
 
-    if (membership.isPresent()) {
-        joinStatus = membership.get().getStatus();
-        role = membership.get().getRole();
-    }
-            return new GroupResponse(
-            g.getId(),
-            g.getName(),
-            g.getDescription(),
-            g.getCreatedBy().getEmail(),
-            g.getPrivacy().name(),
-            joinStatus,
-            role
-    );
-
+        return new GroupResponse(
+                g.getId(),
+                g.getName(),
+                g.getDescription(),
+                g.getCreatedBy().getEmail(),
+                g.getPrivacy().name(),
+                joinStatus,
+                role,
+                memberCount,
+                courseName
+        );
     }
 
     // =========================
@@ -164,15 +167,104 @@ public class StudyGroupService {
     }
 
     // =========================
-    // ADVANCED SEARCH (Specification Based)
+    // LEAVE GROUP
+    // =========================
+    public void leaveGroup(Long groupId, String email) {
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserStudyGroup membership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, user.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+
+        if (membership.getRole() == GroupRole.ADMIN)
+            throw new RuntimeException("Admin cannot leave. Transfer admin role or delete the group first.");
+
+        userStudyGroupRepo.delete(membership);
+    }
+
+    // =========================
+    // REMOVE MEMBER (admin only)
+    // =========================
+    public void removeMember(Long groupId, Long userId, String adminEmail) {
+        User admin = userRepo.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        UserStudyGroup adminMembership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, admin.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+
+        if (adminMembership.getRole() != GroupRole.ADMIN)
+            throw new RuntimeException("Only admin can remove members");
+
+        if (admin.getId().equals(userId))
+            throw new RuntimeException("Admin cannot remove themselves");
+
+        UserStudyGroup memberMembership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new RuntimeException("Member not found in this group"));
+
+        userStudyGroupRepo.delete(memberMembership);
+    }
+
+    // =========================
+    // TRANSFER ADMIN ROLE
+    // =========================
+    public void transferAdmin(Long groupId, Long newAdminUserId, String currentAdminEmail) {
+        User currentAdmin = userRepo.findByEmail(currentAdminEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserStudyGroup currentAdminMembership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, currentAdmin.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+
+        if (currentAdminMembership.getRole() != GroupRole.ADMIN)
+            throw new RuntimeException("Only admin can transfer admin role");
+
+        if (currentAdmin.getId().equals(newAdminUserId))
+            throw new RuntimeException("You are already the admin");
+
+        UserStudyGroup newAdminMembership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, newAdminUserId)
+                .orElseThrow(() -> new RuntimeException("New admin must be a member of the group"));
+
+        // Demote current admin to member
+        currentAdminMembership.setRole(GroupRole.MEMBER);
+        userStudyGroupRepo.save(currentAdminMembership);
+
+        // Promote new member to admin
+        newAdminMembership.setRole(GroupRole.ADMIN);
+        userStudyGroupRepo.save(newAdminMembership);
+    }
+
+    // =========================
+    // DELETE GROUP (admin only)
+    // =========================
+    public void deleteGroup(Long groupId, String adminEmail) {
+        User admin = userRepo.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserStudyGroup adminMembership = userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, admin.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+
+        if (adminMembership.getRole() != GroupRole.ADMIN)
+            throw new RuntimeException("Only admin can delete the group");
+
+        // Delete all memberships first, then the group
+        userStudyGroupRepo.deleteAllByStudyGroupId(groupId);
+        groupRepo.deleteById(groupId);
+    }
+
+    // =========================
+    // ADVANCED SEARCH
     // =========================
     public Page<GroupResponse> searchGroups(
             String keyword,
             String privacy,
             Long courseId,
             Integer minMembers,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
 
         GroupPrivacy privacyEnum = null;
         if (privacy != null && !privacy.isBlank()) {
@@ -180,16 +272,9 @@ public class StudyGroupService {
         }
 
         Specification<StudyGroup> spec =
-                StudyGroupSpecification.filter(
-                        keyword,
-                        privacyEnum,
-                        courseId,
-                        minMembers
-                );
+                StudyGroupSpecification.filter(keyword, privacyEnum, courseId, minMembers);
 
-        Page<StudyGroup> results = groupRepo.findAll(spec, pageable);
-
-        return results.map(this::toResponse);
+        return groupRepo.findAll(spec, pageable).map(this::toResponse);
     }
 
     // =========================
@@ -217,40 +302,30 @@ public class StudyGroupService {
     // GET MY ADMIN GROUPS
     // =========================
     public List<GroupResponse> getMyAdminGroups() {
-
         User user = getCurrentUser();
-
         return userStudyGroupRepo
-                .findByUserIdAndRoleAndStatus(
-                        user.getId(),
-                        GroupRole.ADMIN,
-                        JoinStatus.APPROVED
-                )
+                .findByUserIdAndRoleAndStatus(user.getId(), GroupRole.ADMIN, JoinStatus.APPROVED)
                 .stream()
                 .map(m -> toResponse(m.getStudyGroup()))
                 .toList();
     }
+
     // =========================
-// GET MY PENDING GROUP IDS
-// =========================
-public List<Long> getMyPendingGroupIds() {
-
-    User user = getCurrentUser();
-
-    return userStudyGroupRepo
-            .findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
-            .stream()
-            .map(m -> m.getStudyGroup().getId())
-            .toList();
-}
+    // GET MY PENDING GROUP IDS
+    // =========================
+    public List<Long> getMyPendingGroupIds() {
+        User user = getCurrentUser();
+        return userStudyGroupRepo
+                .findByUserIdAndStatus(user.getId(), JoinStatus.PENDING)
+                .stream()
+                .map(m -> m.getStudyGroup().getId())
+                .toList();
+    }
 
     // =========================
     // APPROVE / REJECT JOIN
     // =========================
-    public void handleJoinRequest(
-            Long groupId,
-            Long adminId,
-            JoinRequestActionRequest request) {
+    public void handleJoinRequest(Long groupId, Long adminId, JoinRequestActionRequest request) {
 
         UserStudyGroup admin = userStudyGroupRepo
                 .findByStudyGroupIdAndUserId(groupId, adminId)
@@ -270,16 +345,14 @@ public List<Long> getMyPendingGroupIds() {
             userStudyGroupRepo.delete(member);
         }
     }
-   // =========================
-// GET ADMIN PENDING REQUESTS
-// =========================
-public List<UserStudyGroup> getPendingRequestsForAdmin() {
 
-    User admin = getCurrentUser();
-
-    return userStudyGroupRepo
-            .findPendingRequestsForAdmin(admin.getId());
-}
+    // =========================
+    // GET ADMIN PENDING REQUESTS
+    // =========================
+    public List<UserStudyGroup> getPendingRequestsForAdmin() {
+        User admin = getCurrentUser();
+        return userStudyGroupRepo.findPendingRequestsForAdmin(admin.getId());
+    }
 
     // =========================
     // GET GROUP MEMBERS
@@ -305,5 +378,4 @@ public List<UserStudyGroup> getPendingRequestsForAdmin() {
                 })
                 .toList();
     }
-
 }

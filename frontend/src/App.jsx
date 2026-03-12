@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
 import AdminRequests from "./pages/AdminRequests";
+//import AvailableCourses from "./pages/AvailableCourses";
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/" element={<Dashboard />} />
      <Route path="/explore-courses" element={<ExploreCourses />} />
-<Route path="/my-courses" element={<MyCourses />} />
+     
+     <Route path="/my-courses" element={<MyCourses />} />
       <Route path="/groups" element={<Groups />} />
       <Route path="/groups/:groupId/members" element={<GroupMembers />} />
       <Route path="/groups/:id" element={<GroupDetail />} />

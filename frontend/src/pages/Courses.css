@@ -101,7 +101,7 @@
 .course-card-bottom {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   margin-top: auto;
 }
 
@@ -135,39 +135,64 @@
   transition: width 0.6s ease;
 }
 
-/* ── Button ───────────────────────────────────────────────── */
+/* ── Primary Button (Enroll / Continue) ───────────────────── */
 .primary-btn {
   width: 100%;
   padding: 11px 0;
-  background: #2563eb;
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
   color: #ffffff;
   border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   text-align: center;
 }
 
 .primary-btn:hover {
-  background: #1d4ed8;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
 .primary-btn:active {
   transform: translateY(0);
 }
 
-/* ── Empty State ──────────────────────────────────────────── */
-.empty-state {
-  background: #f8fafc;
-  padding: 25px;
-  border-radius: 14px;
-  color: #64748b;
+/* ── Enrolled Button ─────────────────────────────────────── */
+.enrolled-btn {
+  width: 100%;
+  padding: 11px 0;
+  background: #d1fae5;
+  color: #065f46;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 600;
+  cursor: not-allowed;
   text-align: center;
 }
+
+/* ── View Course Button ──────────────────────────────────── */
+.view-btn {
+  width: 100%;
+  padding: 10px 0;
+  background: white;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  background: #2563eb;
+  color: white;
+}
+
+/* ── Leave Button ────────────────────────────────────────── */
 .leave-btn {
   width: 100%;
   padding: 10px 0;
@@ -184,13 +209,15 @@
 .leave-btn:hover {
   background: #dc2626;
 }
+
+/* ── Browse Button ───────────────────────────────────────── */
 .browse-btn {
   width: 100%;
   margin-top: 12px;
   padding: 10px;
   border-radius: 10px;
   border: none;
-  background:#f3f4f6;
+  background: #f3f4f6;
   cursor: pointer;
   font-weight: 500;
   transition: 0.2s;
@@ -198,4 +225,15 @@
 
 .browse-btn:hover {
   background: #2563eb;
+  color: white;
+}
+
+/* ── Empty State ─────────────────────────────────────────── */
+.empty-state {
+  background: #f8fafc;
+  padding: 25px;
+  border-radius: 14px;
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
 }

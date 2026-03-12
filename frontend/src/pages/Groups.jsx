@@ -10,7 +10,7 @@ function Groups() {
   const [pendingGroupIds, setPendingGroupIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-const currentUserEmail = localStorage.getItem("email");
+  const currentUserEmail = localStorage.getItem("email");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,30 +22,23 @@ const currentUserEmail = localStorage.getItem("email");
   const fetchGroups = async () => {
   try {
     const res = await api.get("/groups/search", {
-      params: {
-        sortBy: "id",
-        sortDir: "desc",
-        page: 0,
-        size: 50,
-      },
+      params: { page: 0, size: 50 }
     });
-    setGroups(res.data.content); // because backend returns Page<>
+    setGroups(res.data.content);
   } catch (err) {
-    console.error("Error fetching groups:", err);
+    console.error("Error fetching groups:", err.response?.data || err);
   } finally {
     setLoading(false);
   }
 };
-
   const fetchJoinedGroupIds = async () => {
-  try {
-    const res = await api.get("/groups/my-groups");
-    const ids = res.data.map((g) => g.id);
-    setJoinedGroupIds(ids);
-  } catch (error) {
-    console.error(error);
-  }
-};
+    try {
+      const res = await api.get("/groups/my-groups");
+      setJoinedGroupIds(res.data.map((g) => g.id));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const fetchPendingGroupIds = async () => {
     try {
@@ -88,6 +81,7 @@ const currentUserEmail = localStorage.getItem("email");
   return (
     <Layout>
       <div className="groups-wrapper">
+
         {/* Header */}
         <div className="page-header">
           <h1>Study Groups</h1>
@@ -103,11 +97,7 @@ const currentUserEmail = localStorage.getItem("email");
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-
-          <button
-            className="create-group-btn"
-            onClick={() => navigate("/create-group")}
-          >
+          <button className="create-group-btn" onClick={() => navigate("/create-group")}>
             + Create Group
           </button>
         </div>
@@ -118,56 +108,77 @@ const currentUserEmail = localStorage.getItem("email");
         ) : (
           <div className="groups-grid">
             {filteredGroups.map((group) => {
-  const isMember = joinedGroupIds.includes(group.id);
-  const isPending = pendingGroupIds.includes(group.id);
-  const isAdmin = group.adminEmail === currentUserEmail;
+              const isMember = joinedGroupIds.includes(group.id);
+              const isPending = pendingGroupIds.includes(group.id);
+              const isAdmin = group.adminEmail === currentUserEmail;
 
-  return (
-    <div className="group-card" key={group.id}>
-      <div className="group-card-top">
-        <span className="group-privacy-tag">
-          {group.privacy || "PUBLIC"}
-        </span>
+              return (
+                <div className="group-card" key={group.id}>
+                  <div className="group-card-top">
+                    <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
+                      {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
+                    </span>
+                    <h3
+                      onClick={() => navigate(`/groups/${group.id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {group.name}
+                    </h3>
+                    <p className="group-description">{group.description}</p>
+                  </div>
 
-        <h3
-          onClick={() => navigate(`/groups/${group.id}`)}
-          style={{ cursor: "pointer" }}
-        >
-          {group.name}
-        </h3>
+                  <div className="group-card-bottom">
+                    <div className="group-meta">
+                      {group.courseName && (
+                        <span style={{
+                          fontSize: "12px",
+                          color: "#2563eb",
+                          fontWeight: 600,
+                          background: "#eff6ff",
+                          padding: "3px 10px",
+                          borderRadius: "20px",
+                          border: "1px solid #dbeafe",
+                        }}>
+                          {group.courseName}
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: "12px", color: "#6b7280",
+                        display: "flex", alignItems: "center", gap: "4px"
+                      }}>
+                        👥 {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
+                      </span>
+                    </div>
 
-        <p className="group-description">
-          {group.description}
-        </p>
-      </div>
-
-      <div className="group-card-bottom">
-        <div className="group-meta">
-          <span className="group-admin">
-            👤 {group.adminEmail}
-          </span>
-        </div>
-
-        {isAdmin ? (
-          <span className="admin-badge">⭐ Admin</span>
-        ) : isMember ? (
-          <span className="joined-badge">✅ Joined</span>
-        ) : isPending ? (
-          <span className="pending-badge">
-            ⏳ Request Sent to Admin
-          </span>
-        ) : (
-          <button
-            className="primary-btn"
-            onClick={() => handleJoin(group.id)}
-          >
-            Join Group
-          </button>
-        )}
-      </div>
-    </div>
-  );
-})}
+                    {isAdmin ? (
+                      <button
+                        className="primary-btn"
+                        onClick={() => navigate(`/groups/${group.id}`)}
+                      >
+                        ⭐ Manage Group
+                      </button>
+                    ) : isMember ? (
+                      <button
+                        className="joined-badge"
+                        style={{ cursor: "pointer", border: "none", width: "100%" }}
+                        onClick={() => navigate(`/groups/${group.id}`)}
+                      >
+                         View Group
+                      </button>
+                    ) : isPending ? (
+                      <span className="pending-badge">⏳ Request Sent to Admin</span>
+                    ) : (
+                      <button
+                        className="primary-btn"
+                        onClick={() => handleJoin(group.id)}
+                      >
+                        Join Group
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

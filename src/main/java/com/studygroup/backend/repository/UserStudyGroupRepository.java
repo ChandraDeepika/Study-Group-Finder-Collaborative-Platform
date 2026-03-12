@@ -24,6 +24,14 @@ public interface UserStudyGroupRepository
 
     long countByUserId(Long userId);
 
+    // Delete all memberships for a group (used when deleting a group)
+    void deleteAllByStudyGroupId(Long studyGroupId);
+
+    // Count approved members in a group
+    int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
+
+    // Count approved members in a group
+  
     // =========================
     // GET USER GROUPS BY STATUS
     // =========================
@@ -57,7 +65,7 @@ public interface UserStudyGroupRepository
             @Param("groupId") Long groupId);
 
     // =========================
-    // ⭐ NEW: GET ADMIN PENDING REQUESTS
+    // GET ADMIN PENDING REQUESTS
     // =========================
     @Query("SELECT m FROM UserStudyGroup m " +
            "JOIN FETCH m.user u " +

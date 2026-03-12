@@ -33,9 +33,9 @@ public class CourseController {
         return courseService.getCourseById(id);
     }
   
-@GetMapping("/my")
-public List<Course> getMyCourses(Authentication authentication) {
-    String email = authentication.getName();  // logged-in user email
-    return courseService.getMyCourses(email);
-}
+    @GetMapping("/my")
+    public List<Course> getMyCourses(Authentication authentication) {
+        String email = authentication.getName();  // logged-in user email
+        return courseService.getMyCourses(email);
+    }
 }
