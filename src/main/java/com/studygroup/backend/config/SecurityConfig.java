@@ -65,6 +65,7 @@ public DaoAuthenticationProvider authenticationProvider(UserDetailsService userD
                 // public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
 
                 // authenticated endpoints
                 .requestMatchers("/api/courses/my").authenticated()
