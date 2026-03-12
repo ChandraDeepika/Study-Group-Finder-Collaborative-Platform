@@ -65,11 +65,16 @@ function GroupDetail() {
     }
   };
 
-  const handleSend = () => {
+ const handleSend = () => {
 
   if (!text.trim()) return;
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  if (!user.id) {
+    console.error("User not found in localStorage");
+    return;
+  }
 
   const msg = {
     senderId: user.id,

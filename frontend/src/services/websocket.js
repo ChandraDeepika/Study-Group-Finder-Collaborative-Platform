@@ -2,29 +2,27 @@ import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 
 let stompClient = null;
+let connected = false;
 
 export const connectWebSocket = (groupId, onMessage) => {
 
-  if (stompClient) {
-    return;
-  }
+  if (stompClient) return;
 
   const socket = new SockJS("http://localhost:8080/ws");
 
   stompClient = new Client({
     webSocketFactory: () => socket,
-
     reconnectDelay: 5000,
 
     onConnect: () => {
-
       console.log("WebSocket Connected");
+
+      connected = true;
 
       stompClient.subscribe(`/topic/group/${groupId}`, (msg) => {
         const message = JSON.parse(msg.body);
         onMessage(message);
       });
-
     }
   });
 
@@ -33,8 +31,8 @@ export const connectWebSocket = (groupId, onMessage) => {
 
 export const sendMessage = (groupId, message) => {
 
-  if (!stompClient || !stompClient.connected) {
-    console.log("WebSocket still connecting...");
+  if (!connected) {
+    console.log("WebSocket not connected yet");
     return;
   }
 
@@ -43,3 +41,5 @@ export const sendMessage = (groupId, message) => {
     body: JSON.stringify(message)
   });
 };
+
+export const isConnected = () => connected;
