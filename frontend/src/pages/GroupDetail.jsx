@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import api from "../services/api";
 import "../styles/Groups.css";
-import { connectWebSocket, sendMessage } from "../services/websocket";
+
+import { connectWebSocket, sendMessage, disconnectWebSocket } from "../services/websocket";
 
 function GroupDetail() {
 
@@ -19,17 +20,18 @@ function GroupDetail() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
 
-  useEffect(() => {
+useEffect(() => {
 
+  // fetch group + members
   fetchData();
 
+  // connect websocket
   connectWebSocket(id, (message) => {
     setMessages(prev => [...prev, message]);
   });
 
   return () => {
-    // disconnect when leaving page
-    import("../services/websocket").then(m => m.disconnectWebSocket());
+    disconnectWebSocket();
   };
 
 }, [id]);

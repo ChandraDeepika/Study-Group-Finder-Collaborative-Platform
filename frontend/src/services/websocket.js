@@ -6,7 +6,8 @@ let connected = false;
 
 export const connectWebSocket = (groupId, onMessage) => {
 
-  if (stompClient) return;
+  // Prevent multiple connections
+  if (stompClient && connected) return;
 
   const socket = new SockJS("http://localhost:8080/ws");
 
@@ -19,10 +20,20 @@ export const connectWebSocket = (groupId, onMessage) => {
 
       connected = true;
 
+      // Subscribe to group topic
       stompClient.subscribe(`/topic/group/${groupId}`, (msg) => {
         const message = JSON.parse(msg.body);
         onMessage(message);
       });
+    },
+
+    onDisconnect: () => {
+      console.log("WebSocket Disconnected");
+      connected = false;
+    },
+
+    onStompError: (frame) => {
+      console.error("Broker error:", frame.headers["message"]);
     }
   });
 
@@ -31,15 +42,26 @@ export const connectWebSocket = (groupId, onMessage) => {
 
 export const sendMessage = (groupId, message) => {
 
-  if (!connected) {
+  if (!stompClient || !connected) {
     console.log("WebSocket not connected yet");
     return;
   }
+
+  console.log("Sending message:", message);
 
   stompClient.publish({
     destination: `/app/chat/${groupId}`,
     body: JSON.stringify(message)
   });
+};
+
+export const disconnectWebSocket = () => {
+
+  if (stompClient) {
+    stompClient.deactivate();
+    stompClient = null;
+    connected = false;
+  }
 };
 
 export const isConnected = () => connected;
