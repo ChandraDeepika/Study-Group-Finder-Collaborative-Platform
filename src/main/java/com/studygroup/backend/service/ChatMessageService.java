@@ -3,6 +3,8 @@ package com.studygroup.backend.service;
 import com.studygroup.backend.dto.ChatMessageResponse;
 import com.studygroup.backend.dto.SendMessageRequest;
 import com.studygroup.backend.model.ChatMessage;
+import com.studygroup.backend.model.MessageStatus;
+import com.studygroup.backend.model.MessageType;
 import com.studygroup.backend.model.StudyGroup;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.model.UserStudyGroup;
@@ -36,9 +38,6 @@ public class ChatMessageService {
         this.memberRepo = memberRepo;
     }
 
-    // =========================
-    // HELPER
-    // =========================
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userRepo.findByEmail(auth.getName())
@@ -58,16 +57,16 @@ public class ChatMessageService {
         User sender = m.getSender();
         return new ChatMessageResponse(
                 m.getId(),
-                m.getStudyGroup().getId(),
+                m.getGroup().getId(),
                 sender.getId(),
                 sender.getName(),
                 sender.getEmail(),
                 sender.getProfileImage(),
-                m.getContent(),
-                m.getMessageType(),
-                m.getFileUrl(),
+                m.getMessageText(),
+                m.getMessageType().name(),
+                null,
                 m.isEdited(),
-                m.getSentAt(),
+                m.getTimestamp(),
                 m.getEditedAt()
         );
     }
@@ -77,7 +76,6 @@ public class ChatMessageService {
     // =========================
     public ChatMessageResponse sendMessage(Long groupId, SendMessageRequest request) {
         User sender = getCurrentUser();
-
         verifyMembership(groupId, sender.getId());
 
         if (request.getContent() == null || request.getContent().isBlank())
@@ -87,11 +85,12 @@ public class ChatMessageService {
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         ChatMessage message = new ChatMessage();
-        message.setStudyGroup(group);
+        message.setGroup(group);
         message.setSender(sender);
-        message.setContent(request.getContent().trim());
-        message.setMessageType(request.getMessageType() != null ? request.getMessageType() : "TEXT");
-        message.setFileUrl(request.getFileUrl());
+        message.setMessageText(request.getContent().trim());
+        message.setMessageType(MessageType.TEXT);
+        message.setStatus(MessageStatus.SENT);
+        message.setTimestamp(LocalDateTime.now());
 
         return toResponse(chatRepo.save(message));
     }
@@ -103,7 +102,7 @@ public class ChatMessageService {
         User user = getCurrentUser();
         verifyMembership(groupId, user.getId());
 
-        return chatRepo.findByGroupId(groupId)
+        return chatRepo.findByGroup_IdAndDeletedFalseOrderByTimestampAsc(groupId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -127,7 +126,7 @@ public class ChatMessageService {
         if (newContent == null || newContent.isBlank())
             throw new RuntimeException("Message content cannot be empty");
 
-        message.setContent(newContent.trim());
+        message.setMessageText(newContent.trim());
         message.setEdited(true);
         message.setEditedAt(LocalDateTime.now());
 
@@ -147,7 +146,7 @@ public class ChatMessageService {
             throw new RuntimeException("You can only delete your own messages");
 
         message.setDeleted(true);
-        message.setContent("[This message was deleted]");
+        message.setMessageText("[This message was deleted]");
         chatRepo.save(message);
     }
 }

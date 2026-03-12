@@ -101,12 +101,25 @@ function GroupDetail() {
 
         {/* Group Header */}
         <div className="page-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <h1>{group.name}</h1>
-            <span className="group-privacy-tag">{group.privacy}</span>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <h1>{group.name}</h1>
+                <span className="group-privacy-tag">{group.privacy}</span>
+              </div>
+              <p>{group.description}</p>
+              <span className="group-admin">👤 Admin: {adminName}</span>
+            </div>
+            {isMember && (
+              <button 
+                className="primary-btn" 
+                onClick={() => navigate(`/groups/${id}/chat`)}
+                style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}
+              >
+                💬 Open Group Chat
+              </button>
+            )}
           </div>
-          <p>{group.description}</p>
-          <span className="group-admin">👤 Admin: {adminName}</span>
         </div>
 
         {/* Pending Requests (admin only) */}

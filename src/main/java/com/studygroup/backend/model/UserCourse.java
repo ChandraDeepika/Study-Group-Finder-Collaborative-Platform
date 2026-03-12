@@ -3,10 +3,6 @@ package com.studygroup.backend.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -17,11 +13,6 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(columnNames = {"user_id", "course_id"})
         }
 )
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UserCourse {
 
     @Id
@@ -39,7 +30,6 @@ public class UserCourse {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "course_id", nullable = false)
-    //@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Course course;
 
     // =============================
@@ -61,6 +51,71 @@ public class UserCourse {
 
     @Column(name = "last_accessed_at")
     private LocalDateTime lastAccessedAt;
+
+    // Constructors
+    public UserCourse() {}
+
+    public UserCourse(User user, Course course) {
+        this.user = user;
+        this.course = course;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(Course course) {
+        this.course = course;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public void setProgress(int progress) {
+        this.progress = progress;
+    }
+
+    public boolean isStarted() {
+        return started;
+    }
+
+    public void setStarted(boolean started) {
+        this.started = started;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+
+    public LocalDateTime getLastAccessedAt() {
+        return lastAccessedAt;
+    }
+
+    public void setLastAccessedAt(LocalDateTime lastAccessedAt) {
+        this.lastAccessedAt = lastAccessedAt;
+    }
 
     // =============================
     // BUSINESS METHODS

@@ -1,0 +1,72 @@
+.message-item {
+  display: flex;
+  flex-direction: column;
+  max-width: 65%; /* Max width around 60-70% */
+  margin-bottom: 12px; /* Proper spacing between messages */
+}
+
+.message-item.message-sent {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message-item.message-received {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message-item .message-sender {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 6px; /* Clean spacing between sender name and message */
+  padding: 0 4px;
+  font-weight: 500;
+}
+
+.message-content {
+  padding: 8px 12px;
+  border-radius: 12px; /* Rounded message bubbles */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Slight shadow for depth */
+  animation: fadeIn 0.3s ease;
+  position: relative;
+  min-width: 100px; /* enough space for timestamp */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Light green/blue background for sent messages */
+.message-item.message-sent .message-content {
+  background-color: #dcf8c6; /* WhatsApp style light green */
+  color: #1e293b;
+  border-bottom-right-radius: 4px;
+}
+
+/* Light gray background for received messages */
+.message-item.message-received .message-content {
+  background-color: #f1f5f9; /* Light gray */
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 4px;
+}
+
+.message-text {
+  margin: 0;
+  font-size: 1rem; /* Slightly larger message text */
+  line-height: 1.4;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  padding-bottom: 14px; /* space for timestamp to float below */
+}
+
+.message-time {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  font-size: 0.65rem; /* Smaller timestamp text */
+  color: #64748b; /* Uniform subtle color for timestamp in both bubble types to match modern apps */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
