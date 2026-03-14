@@ -2,7 +2,6 @@ package com.studygroup.backend.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -25,7 +24,7 @@ public class ChatMessage {
     @JoinColumn(name = "group_id", nullable = false)
     private StudyGroup group;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
@@ -78,7 +77,6 @@ public class ChatMessage {
     public StudyGroup getGroup() { return group; }
     public void setGroup(StudyGroup group) { this.group = group; }
 
-    // Alias for service compatibility
     public StudyGroup getStudyGroup() { return group; }
     public void setStudyGroup(StudyGroup group) { this.group = group; }
 
@@ -92,7 +90,6 @@ public class ChatMessage {
     public String getMessageText() { return messageText; }
     public void setMessageText(String messageText) { this.messageText = messageText; }
 
-    // Alias for service compatibility
     public String getContent() { return messageText; }
     public void setContent(String content) { this.messageText = content; }
 
@@ -105,7 +102,6 @@ public class ChatMessage {
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 
-    // Alias for service compatibility
     public LocalDateTime getSentAt() { return timestamp; }
 
     public boolean isDeleted() { return deleted; }
