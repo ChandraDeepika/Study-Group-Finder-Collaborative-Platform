@@ -1,7 +1,6 @@
 package com.studygroup.backend.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -29,9 +28,11 @@ public class ChatMessage {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @NotBlank
-    @Column(name = "message_text", length = 1000, nullable = false)
+    @Column(name = "message_text", length = 1000)
     private String messageText;
+
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
+    private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,6 +60,7 @@ public class ChatMessage {
         this.group = group;
         this.sender = sender;
         this.messageText = messageText;
+        this.content = messageText;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -90,11 +92,16 @@ public class ChatMessage {
     public Long getSenderId() { return sender != null ? sender.getId() : null; }
 
     public String getMessageText() { return messageText; }
-    public void setMessageText(String messageText) { this.messageText = messageText; }
+    public void setMessageText(String messageText) {
+        this.messageText = messageText;
+        this.content = messageText;  // keep both columns in sync
+    }
 
-    // Alias for service compatibility
-    public String getContent() { return messageText; }
-    public void setContent(String content) { this.messageText = content; }
+    public String getContent() { return content; }
+    public void setContent(String content) {
+        this.content = content;
+        this.messageText = content;  // keep both columns in sync
+    }
 
     public MessageType getMessageType() { return messageType; }
     public void setMessageType(MessageType messageType) { this.messageType = messageType; }

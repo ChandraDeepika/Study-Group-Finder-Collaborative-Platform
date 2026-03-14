@@ -1,132 +1,197 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import '../styles/ChatPage.css';
-import MessageItem from '../components/MessageItem';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../services/api";
+import Layout from "../components/Layout";
+import "../styles/ChatPage.css";
 
 const ChatPage = () => {
+
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  // Mock data as requested
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "Alice", text: "Hello everyone!", time: "10:30" },
-    { id: 2, sender: "Bob", text: "Hi Alice! Ready to study?", time: "10:32" },
-    { id: 3, sender: "Charlie", text: "Hey! Let's get started on Chapter 4.", time: "10:35" }
-  ]);
-  
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+
   const messagesEndRef = useRef(null);
 
-  // Hardcoded current user for styling purposes (sent vs received bubbles)
-  const currentUser = "Alice";
+  // current user from localStorage (set at login)
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Scroll to bottom whenever messages change
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
+    fetchMessages();
+    // poll every 3 seconds so other users' messages appear
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [groupId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  // ======================
+  // FETCH MESSAGES
+  // ======================
+
+  const fetchMessages = async () => {
+
+    try {
+
+      // api.js interceptor automatically adds Authorization: Bearer <token>
+      const res = await api.get(`/groups/${groupId}/chat`);
+
+      const formatted = res.data.map((msg) => ({
+        id: msg.id,
+        sender: msg.senderName || "User",
+        senderEmail: msg.senderEmail || "",
+        text: msg.content,
+        // backend returns sentAt (ChatMessageResponse.sentAt)
+        time: new Date(msg.sentAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      }));
+
+      setMessages(formatted);
+
+    } catch (err) {
+
+      console.error("Error loading messages:", err);
+
+    }
+
+  };
+
+  // ======================
+  // SEND MESSAGE
+  // ======================
+
+  const handleSendMessage = async (e) => {
+
     e.preventDefault();
+
     if (!newMessage.trim()) return;
 
-    const newMsgObj = {
-      id: messages.length + 1,
-      sender: currentUser,
-      text: newMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) // Simple HH:MM format
-    };
+    try {
 
-    setMessages([...messages, newMsgObj]);
-    setNewMessage("");
+      // api.js interceptor automatically adds Authorization: Bearer <token>
+      const res = await api.post(`/groups/${groupId}/chat`, {
+        content: newMessage,
+        messageType: "TEXT",
+        fileUrl: null
+      });
+
+      const msg = {
+        id: res.data.id,
+        sender: res.data.senderName || "You",
+        senderEmail: res.data.senderEmail || "",
+        text: res.data.content,
+        time: new Date(res.data.sentAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      setMessages(prev => [...prev, msg]);
+
+      setNewMessage("");
+
+    } catch (err) {
+
+      console.error("Send message failed:", err);
+
+    }
+
   };
 
   return (
+
     <Layout>
-      <div style={{ padding: '20px' }}>
-        <button 
-          onClick={() => navigate(groupId ? `/groups/${groupId}` : '/groups')}
-          style={{ 
-            marginBottom: '16px', 
-            background: 'transparent', 
-            border: 'none', 
-            color: '#3b82f6', 
-            cursor: 'pointer', 
-            fontWeight: 600, 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px',
-            fontSize: '1rem'
-          }}
+
+      <div className="chat-wrapper">
+
+        <button
+          className="back-btn"
+          onClick={() => navigate(`/groups/${groupId}`)}
         >
-          ⬅ {groupId ? 'Back to Group' : 'Back to Groups'}
+          ← Back to Group
         </button>
-        <div className="chat-page-container">
-      {/* Top Section: Header */}
-      <div className="chat-header">
-        <h2>Study Group Chat</h2>
-        {/* Optional: Add members count or info icon here later */}
-      </div>
 
-      {/* Middle Section: Scrollable Messages */}
-      <div className="chat-messages-area">
-        {messages.map((msg) => {
-          const isSentByMe = msg.sender === currentUser;
-          return (
-            <MessageItem 
-              key={msg.id} 
-              message={msg} 
-              isSentByMe={isSentByMe} 
-            />
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+        <div className="chat-container">
 
-      {/* Bottom Section: Input */}
-      <div className="chat-input-container">
-        <form className="chat-input-form" onSubmit={handleSendMessage}>
-          <div className="chat-input-wrapper">
+          <div className="chat-header">
+            <h2>Study Group Chat</h2>
+          </div>
+
+          <div className="chat-messages">
+
+            {messages.length === 0 && (
+              <div className="empty-chat">
+                <p>No messages yet. Be the first to say something!</p>
+              </div>
+            )}
+
+            {messages.map((msg) => {
+              const isMe = msg.senderEmail === currentUser.email;
+              return (
+                <div
+                  key={msg.id}
+                  className={`message-row ${isMe ? "me" : "other"}`}
+                >
+
+                  {!isMe && (
+                    <div className="avatar">
+                      {msg.sender.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="message-bubble">
+                    {!isMe && (
+                      <div className="sender-name">{msg.sender}</div>
+                    )}
+                    <div className="message-text">{msg.text}</div>
+                    <div className="message-time">{msg.time}</div>
+                  </div>
+
+                </div>
+              );
+            })}
+
+            <div ref={messagesEndRef} />
+
+          </div>
+
+          <form
+            className="chat-input-area"
+            onSubmit={handleSendMessage}
+          >
+
             <input
               type="text"
-              className="chat-input"
-              placeholder="Type your message..."
+              placeholder="Type message..."
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault(); // Prevent accidental form submission reload
-                  handleSendMessage(e);
-                }
-              }}
+              onChange={(e) =>
+                setNewMessage(e.target.value)
+              }
             />
-          </div>
-          <button 
-            type="submit" 
-            className={`chat-send-btn ${!newMessage.trim() ? 'disabled' : ''}`}
-            disabled={!newMessage.trim()}
-          >
-            {/* Simple SVG Send Icon */}
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="currentColor" 
-              width="20" 
-              height="20"
-            >
-              <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
-            </svg>
-          </button>
-        </form>
-      </div>
+
+            <button type="submit">
+              ➤
+            </button>
+
+          </form>
+
         </div>
+
       </div>
+
     </Layout>
+
   );
+
 };
 
 export default ChatPage;
