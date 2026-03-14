@@ -4,127 +4,79 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.studygroup.backend.model.MessageType;
 import com.studygroup.backend.model.MessageStatus;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-
 import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatMessageDTO {
 
     private Long id;
-
-    @NotNull(message = "Group ID is required")
     private Long groupId;
-
-    @NotNull(message = "Sender ID is required")
     private Long senderId;
-
     private String senderName;
-
-    @NotBlank(message = "Message cannot be empty")
-    @Size(max = 1000, message = "Message cannot exceed 1000 characters")
+    private String senderEmail;
+    private String type;         // TYPING | DELETE | READ | null (normal message)
     private String messageText;
-
+    private String content;
+    private String fileUrl;
     private MessageType messageType = MessageType.TEXT;
-
-    private MessageStatus status = MessageStatus.SENT;
-
+    private MessageStatus status;
     private LocalDateTime timestamp;
-
     private boolean edited;
-
     private boolean deleted;
+    private boolean isTyping;
+    private Long messageId;      // used for DELETE events
+    private String readerEmail;  // used for READ events
 
     public ChatMessageDTO() {}
 
-    public ChatMessageDTO(Long groupId, Long senderId, String messageText) {
-        this.groupId = groupId;
-        this.senderId = senderId;
-        this.messageText = messageText;
-        this.timestamp = LocalDateTime.now();
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    // GETTERS AND SETTERS
+    public Long getGroupId() { return groupId; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getSenderId() { return senderId; }
+    public void setSenderId(Long senderId) { this.senderId = senderId; }
 
-    public Long getGroupId() {
-        return groupId;
-    }
+    public String getSenderName() { return senderName; }
+    public void setSenderName(String senderName) { this.senderName = senderName; }
 
-    public Long getSenderId() {
-        return senderId;
-    }
+    public String getSenderEmail() { return senderEmail; }
+    public void setSenderEmail(String senderEmail) { this.senderEmail = senderEmail; }
 
-    public String getSenderName() {
-        return senderName;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public String getMessageText() {
-        return messageText;
-    }
+    public String getMessageText() { return messageText; }
+    public void setMessageText(String messageText) { this.messageText = messageText; }
 
-    public MessageType getMessageType() {
-        return messageType;
-    }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
-    public MessageStatus getStatus() {
-        return status;
-    }
+    public String getFileUrl() { return fileUrl; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
+    public MessageType getMessageType() { return messageType; }
+    public void setMessageType(MessageType messageType) { this.messageType = messageType; }
 
-    public boolean isEdited() {
-        return edited;
-    }
+    public MessageStatus getStatus() { return status; }
+    public void setStatus(MessageStatus status) { this.status = status; }
 
-    public boolean isDeleted() {
-        return deleted;
-    }
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public boolean isEdited() { return edited; }
+    public void setEdited(boolean edited) { this.edited = edited; }
 
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 
-    public void setSenderId(Long senderId) {
-        this.senderId = senderId;
-    }
+    public boolean isTyping() { return isTyping; }
+    public void setTyping(boolean typing) { isTyping = typing; }
 
-    public void setSenderName(String senderName) {
-        this.senderName = senderName;
-    }
+    public Long getMessageId() { return messageId; }
+    public void setMessageId(Long messageId) { this.messageId = messageId; }
 
-    public void setMessageText(String messageText) {
-        this.messageText = messageText;
-    }
-
-    public void setMessageType(MessageType messageType) {
-        this.messageType = messageType;
-    }
-
-    public void setStatus(MessageStatus status) {
-        this.status = status;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public void setEdited(boolean edited) {
-        this.edited = edited;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
+    public String getReaderEmail() { return readerEmail; }
+    public void setReaderEmail(String readerEmail) { this.readerEmail = readerEmail; }
 }

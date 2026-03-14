@@ -16,11 +16,13 @@ import com.studygroup.backend.repository.UserStudyGroupRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
 public class ChatMessageService {
 
     private final ChatMessageRepository chatRepo;
@@ -64,8 +66,9 @@ public class ChatMessageService {
                 sender.getProfileImage(),
                 m.getMessageText(),
                 m.getMessageType().name(),
-                null,
+                m.getFileUrl(),
                 m.isEdited(),
+                m.getStatus() != null ? m.getStatus().getValue() : "sent",
                 m.getTimestamp(),
                 m.getEditedAt()
         );
@@ -84,15 +87,40 @@ public class ChatMessageService {
         StudyGroup group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        MessageType type = MessageType.TEXT;
+        if (request.getMessageType() != null) {
+            try { type = MessageType.valueOf(request.getMessageType()); }
+            catch (IllegalArgumentException ignored) {}
+        }
+
         ChatMessage message = new ChatMessage();
         message.setGroup(group);
         message.setSender(sender);
         message.setMessageText(request.getContent().trim());
-        message.setMessageType(MessageType.TEXT);
+        message.setMessageType(type);
+        message.setFileUrl(request.getFileUrl());
         message.setStatus(MessageStatus.SENT);
         message.setTimestamp(LocalDateTime.now());
 
-        return toResponse(chatRepo.save(message));
+        ChatMessage saved = chatRepo.save(message);
+
+        // Build response with fileUrl for FILE/IMAGE types
+        User s = saved.getSender();
+        return new ChatMessageResponse(
+                saved.getId(),
+                saved.getGroup().getId(),
+                s.getId(),
+                s.getName(),
+                s.getEmail(),
+                s.getProfileImage(),
+                saved.getMessageText(),
+                saved.getMessageType().name(),
+                saved.getFileUrl(),
+                saved.isEdited(),
+                saved.getStatus() != null ? saved.getStatus().getValue() : "sent",
+                saved.getTimestamp(),
+                saved.getEditedAt()
+        );
     }
 
     // =========================
@@ -131,6 +159,15 @@ public class ChatMessageService {
         message.setEditedAt(LocalDateTime.now());
 
         return toResponse(chatRepo.save(message));
+    }
+
+    // =========================
+    // MARK MESSAGES AS READ
+    // =========================
+    @Transactional
+    public void markMessagesAsRead(Long groupId) {
+        User user = getCurrentUser();
+        chatRepo.markMessagesAsRead(groupId, user.getId(), MessageStatus.READ);
     }
 
     // =========================

@@ -14,6 +14,7 @@ public class ChatMessageResponse {
     private String messageType;
     private String fileUrl;
     private boolean edited;
+    private String status;
     private LocalDateTime sentAt;
     private LocalDateTime editedAt;
 
@@ -27,6 +28,7 @@ public class ChatMessageResponse {
                                String messageType,
                                String fileUrl,
                                boolean edited,
+                               String status,
                                LocalDateTime sentAt,
                                LocalDateTime editedAt) {
         this.id = id;
@@ -39,6 +41,7 @@ public class ChatMessageResponse {
         this.messageType = messageType;
         this.fileUrl = fileUrl;
         this.edited = edited;
+        this.status = status;
         this.sentAt = sentAt;
         this.editedAt = editedAt;
     }
@@ -53,6 +56,7 @@ public class ChatMessageResponse {
     public String getMessageType() { return messageType; }
     public String getFileUrl() { return fileUrl; }
     public boolean isEdited() { return edited; }
+    public String getStatus() { return status; }
     public LocalDateTime getSentAt() { return sentAt; }
     public LocalDateTime getEditedAt() { return editedAt; }
 }

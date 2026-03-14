@@ -1,0 +1,306 @@
+/* ── Group Detail Hero ────────────────────────────────────── */
+.gd-hero {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #7c3aed 100%);
+  border-radius: 20px;
+  padding: 36px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.gd-hero::before {
+  content: "";
+  position: absolute;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  top: -80px; right: -50px;
+  pointer-events: none;
+}
+
+.gd-hero-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex: 1;
+  position: relative;
+}
+
+.gd-hero-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.gd-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.gd-hero-title-row h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.gd-hero-desc {
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.gd-hero-admin {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+}
+
+.gd-chat-btn {
+  padding: 12px 24px;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.gd-chat-btn:hover {
+  background: rgba(255,255,255,0.25);
+  transform: translateY(-2px);
+}
+
+/* ── Section ──────────────────────────────────────────────── */
+.gd-section {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+}
+
+.gd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.gd-section-header.pending {
+  background: #fffbeb;
+  border-bottom-color: #fde68a;
+}
+
+.gd-section-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+}
+
+.gd-count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.gd-count-badge.blue   { background: #eff6ff; color: #2563eb; }
+.gd-count-badge.amber  { background: #fef3c7; color: #d97706; }
+
+/* ── Members list ─────────────────────────────────────────── */
+.gd-members-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.gd-member-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 0.15s;
+}
+
+.gd-member-row:last-child { border-bottom: none; }
+.gd-member-row:hover { background: #fafafa; }
+
+.gd-member-row.pending-row { background: #fffdf0; }
+.gd-member-row.pending-row:hover { background: #fef9c3; }
+
+.gd-member-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gd-member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gd-member-info strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.gd-member-info span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.gd-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gd-role-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.gd-role-badge.admin  { background: #eff6ff; color: #2563eb; }
+.gd-role-badge.member { background: #f0fdf4; color: #16a34a; }
+
+/* ── Action buttons ───────────────────────────────────────── */
+.gd-btn-approve {
+  padding: 7px 14px;
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.gd-btn-approve:hover {
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+.gd-btn-reject {
+  padding: 7px 14px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.gd-btn-reject:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.gd-btn-remove {
+  padding: 5px 12px;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.gd-btn-remove:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* ── Danger zone ──────────────────────────────────────────── */
+.gd-danger-zone {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.gd-btn-leave {
+  padding: 10px 22px;
+  background: transparent;
+  color: #ef4444;
+  border: 1.5px solid #ef4444;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.gd-btn-leave:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.gd-btn-delete {
+  padding: 10px 22px;
+  background: transparent;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.gd-btn-delete:hover {
+  background: #dc2626;
+  color: white;
+  transform: translateY(-1px);
+}

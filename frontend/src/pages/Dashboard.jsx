@@ -17,18 +17,10 @@ export default function Dashboard() {
   const fetchStats = async () => {
     try {
       const [profileRes, coursesRes, groupsRes, pendingRes] = await Promise.all([
-        fetch("http://localhost:8080/api/profile/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("http://localhost:8080/api/courses/my", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("http://localhost:8080/api/groups/my-groups", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("http://localhost:8080/api/groups/my-pending-ids", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch("http://localhost:8080/api/profile/me", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("http://localhost:8080/api/courses/my",  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("http://localhost:8080/api/groups/my-groups", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("http://localhost:8080/api/groups/my-pending-ids", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (profileRes.status === 401 || profileRes.status === 403) {
@@ -37,37 +29,22 @@ export default function Dashboard() {
         return;
       }
 
-      if (profileRes.ok) {
-        const data = await profileRes.json();
-        setUserName(data.name || "");
-      }
-
-      if (coursesRes.ok) {
-        const courses = await coursesRes.json();
-        setCourseCount(courses.length);
-      }
-
-      if (groupsRes.ok) {
-        const groups = await groupsRes.json();
-        setGroupCount(groups.length);
-      }
-
-      if (pendingRes.ok) {
-        const pending = await pendingRes.json();
-        setPendingCount(pending.length);
-      }
+      if (profileRes.ok) { const d = await profileRes.json(); setUserName(d.name || ""); }
+      if (coursesRes.ok) { const d = await coursesRes.json(); setCourseCount(d.length); }
+      if (groupsRes.ok)  { const d = await groupsRes.json();  setGroupCount(d.length); }
+      if (pendingRes.ok) { const d = await pendingRes.json(); setPendingCount(d.length); }
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!token) { navigate("/login"); return; }
     fetchStats();
   }, [token, navigate]);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
     <Layout>
@@ -75,25 +52,43 @@ export default function Dashboard() {
 
         {/* Welcome Banner */}
         <div className="dash-banner">
-          <h1>Welcome back{userName ? `, ${userName}` : ""} 👋</h1>
-          <p>Here's what's happening with your studies today.</p>
+          <div className="dash-banner-content">
+            <div className="dash-banner-text">
+              <p className="dash-banner-greeting">{greeting} 👋</p>
+              <h1>Welcome back{userName ? `, ${userName}` : ""}!</h1>
+              <p className="dash-banner-sub">Here's what's happening with your studies today.</p>
+            </div>
+            <div className="dash-banner-actions">
+              <button className="dash-banner-btn" onClick={() => navigate("/explore-courses")}>
+                📚 Explore Courses
+              </button>
+              <button className="dash-banner-btn dash-banner-btn-outline" onClick={() => navigate("/groups")}>
+                👥 Find Groups
+              </button>
+            </div>
+          </div>
+          <div className="dash-banner-illustration">
+            <div className="dash-illus-circle c1">📚</div>
+            <div className="dash-illus-circle c2">💬</div>
+            <div className="dash-illus-circle c3">🚀</div>
+          </div>
         </div>
 
         {/* Stats */}
         <div className="dash-stats">
-          <div className="dash-stat-card">
+          <div className="dash-stat-card" onClick={() => navigate("/my-courses")} style={{ cursor: "pointer" }}>
             <div className="dash-stat-icon" style={{ background: "#eff6ff" }}>📚</div>
             <div className="dash-stat-num" style={{ color: "#2563eb" }}>{courseCount}</div>
             <div className="dash-stat-label">Enrolled Courses</div>
             <div className="dash-stat-sub">Courses you're part of</div>
           </div>
-          <div className="dash-stat-card">
+          <div className="dash-stat-card" onClick={() => navigate("/groups")} style={{ cursor: "pointer" }}>
             <div className="dash-stat-icon" style={{ background: "#f0fdf4" }}>👥</div>
             <div className="dash-stat-num" style={{ color: "#16a34a" }}>{groupCount}</div>
             <div className="dash-stat-label">Study Groups</div>
             <div className="dash-stat-sub">Groups you've joined</div>
           </div>
-          <div className="dash-stat-card">
+          <div className="dash-stat-card" onClick={() => navigate("/admin/requests")} style={{ cursor: "pointer" }}>
             <div className="dash-stat-icon" style={{ background: "#fef3c7" }}>⏳</div>
             <div className="dash-stat-num" style={{ color: "#d97706" }}>{pendingCount}</div>
             <div className="dash-stat-label">Pending Requests</div>
@@ -117,14 +112,10 @@ export default function Dashboard() {
                 <p>{courseCount} courses enrolled</p>
               </div>
             </div>
-           <CourseList onEnrol={fetchStats} />
-
-<button
-  className="browse-btn"
-  onClick={() => navigate("/explore-courses")}
->
-  Browse All Courses →
-</button>
+            <CourseList onEnrol={fetchStats} />
+            <button className="browse-btn" onClick={() => navigate("/explore-courses")}>
+              Browse All Courses →
+            </button>
           </div>
 
           <div className="dash-section-card">
@@ -140,7 +131,6 @@ export default function Dashboard() {
         </div>
 
       </div>
-      
     </Layout>
   );
 }

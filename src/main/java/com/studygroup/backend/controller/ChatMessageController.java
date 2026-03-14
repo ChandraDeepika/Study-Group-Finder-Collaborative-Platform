@@ -5,7 +5,13 @@ import com.studygroup.backend.dto.SendMessageRequest;
 import com.studygroup.backend.service.ChatMessageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,20 +26,59 @@ public class ChatMessageController {
     }
 
     // GET /api/groups/{groupId}/chat
-    // Get all messages for a group (members only)
     @GetMapping
     public ResponseEntity<List<ChatMessageResponse>> getMessages(
             @PathVariable Long groupId) {
         return ResponseEntity.ok(chatService.getMessages(groupId));
     }
 
-    // POST /api/groups/{groupId}/chat
-    // Send a message to a group
+    // POST /api/groups/{groupId}/chat  — text message
     @PostMapping
     public ResponseEntity<ChatMessageResponse> sendMessage(
             @PathVariable Long groupId,
             @RequestBody SendMessageRequest request) {
         return ResponseEntity.ok(chatService.sendMessage(groupId, request));
+    }
+
+    // POST /api/groups/{groupId}/chat/upload  — file/image upload
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @PathVariable Long groupId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        String original = file.getOriginalFilename();
+        String ext = (original != null && original.contains("."))
+                ? original.substring(original.lastIndexOf(".")).toLowerCase() : "";
+
+        String fileName = System.currentTimeMillis() + "_" + (original != null ? original.replaceAll("[^a-zA-Z0-9._-]", "_") : "file");
+        Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
+        Files.createDirectories(uploadDir);
+        file.transferTo(uploadDir.resolve(fileName).toFile());
+
+        String fileUrl = "http://localhost:8080/uploads/" + fileName;
+        String[] imageExts = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
+        boolean isImage = java.util.Arrays.asList(imageExts).contains(ext);
+
+        // Save as a chat message with fileUrl
+        SendMessageRequest req = new SendMessageRequest();
+        req.setContent(original);
+        req.setMessageType(isImage ? "IMAGE" : "FILE");
+        req.setFileUrl(fileUrl);
+        ChatMessageResponse saved = chatService.sendMessage(groupId, req);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("fileUrl", fileUrl);
+        result.put("fileName", original);
+        result.put("messageType", isImage ? "IMAGE" : "FILE");
+        result.put("messageId", String.valueOf(saved.getId()));
+        return ResponseEntity.ok(result);
+    }
+
+    // PUT /api/groups/{groupId}/chat/read  — mark all messages as read
+    @PutMapping("/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long groupId) {
+        chatService.markMessagesAsRead(groupId);
+        return ResponseEntity.ok().build();
     }
 
     // PUT /api/groups/{groupId}/chat/{messageId}

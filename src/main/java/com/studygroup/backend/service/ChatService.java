@@ -6,6 +6,7 @@ import com.studygroup.backend.model.MessageStatus;
 import com.studygroup.backend.model.StudyGroup;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.repository.ChatMessageRepository;
+import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 
 import org.slf4j.Logger;
@@ -28,15 +29,18 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final StudyGroupService studyGroupService;
+    private final StudyGroupRepository studyGroupRepository;
     private final UserRepository userRepository;
 
     public ChatService(
             ChatMessageRepository chatMessageRepository,
             StudyGroupService studyGroupService,
+            StudyGroupRepository studyGroupRepository,
             UserRepository userRepository) {
 
         this.chatMessageRepository = chatMessageRepository;
         this.studyGroupService = studyGroupService;
+        this.studyGroupRepository = studyGroupRepository;
         this.userRepository = userRepository;
     }
 
@@ -123,8 +127,8 @@ public class ChatService {
         User sender = userRepository.findById(dto.getSenderId())
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
 
-        StudyGroup group = new StudyGroup();
-        group.setId(dto.getGroupId());
+        StudyGroup group = studyGroupRepository.findById(dto.getGroupId())
+                .orElseThrow(() -> new RuntimeException("Group not found"));
 
         message.setGroup(group);
         message.setSender(sender);

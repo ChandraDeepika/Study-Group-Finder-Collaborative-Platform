@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import ChatWidget from "./ChatWidget";
 import "../styles/layout.css";
 
 export default function Layout({ children }) {
@@ -12,6 +13,7 @@ export default function Layout({ children }) {
           {children}
         </div>
       </div>
+      <ChatWidget />
     </div>
   );
 }

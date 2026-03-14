@@ -1,6 +1,14 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/sidebar.css";
 
+const NAV_ITEMS = [
+  { to: "/dashboard",       label: "Dashboard",       icon: "🏠" },
+  { to: "/explore-courses", label: "Explore Courses", icon: "🔍" },
+  { to: "/my-courses",      label: "My Courses",      icon: "📚" },
+  { to: "/groups",          label: "Groups",          icon: "👥" },
+  { to: "/admin/requests",  label: "Admin",           icon: "⚙️" },
+];
+
 export default function Sidebar() {
   const navigate = useNavigate();
 
@@ -13,18 +21,23 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-top">
-        <h2 className="logo">StudyConnect</h2>
+        <div className="sidebar-logo">
+          <span className="sidebar-logo-icon">📚</span>
+          <span className="sidebar-logo-text">StudyConnect</span>
+        </div>
         <nav className="nav-links">
-          <NavLink to="/dashboard">Dashboard</NavLink>
-         <NavLink to="/explore-courses">Explore Courses</NavLink>
-<NavLink to="/my-courses">My Courses</NavLink>
-          <NavLink to="/groups">Groups</NavLink>
-          <NavLink to="/admin/requests">
-            Admin
-          </NavLink>
+          {NAV_ITEMS.map(({ to, label, icon }) => (
+            <NavLink key={to} to={to}>
+              <span className="nav-icon">{icon}</span>
+              <span className="nav-label">{label}</span>
+            </NavLink>
+          ))}
         </nav>
       </div>
-      <button className="logout-btn" onClick={handleLogout}>Logout</button>
+      <button className="logout-btn" onClick={handleLogout}>
+        <span>🚪</span>
+        <span>Logout</span>
+      </button>
     </div>
   );
 }

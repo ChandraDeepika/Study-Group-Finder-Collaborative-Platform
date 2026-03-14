@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import api from "../services/api";
 import "../styles/Groups.css";
+import "../styles/GroupDetail.css";
 
 function GroupDetail() {
   const { id } = useParams();
@@ -22,7 +23,6 @@ function GroupDetail() {
       const membersRes = await api.get(`/groups/${id}/members`);
       setGroup(groupRes.data);
       setMembers(membersRes.data);
-
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const email = user.email || "";
       setCurrentUserEmail(email);
@@ -37,28 +37,21 @@ function GroupDetail() {
   const handleApprove = async (userId) => {
     try {
       await api.post(`/groups/${id}/join-requests`, { userId, approve: true });
-      alert("Member approved!");
       fetchData();
-    } catch (error) {
-      alert("Failed to approve");
-    }
+    } catch { alert("Failed to approve"); }
   };
 
   const handleReject = async (userId) => {
     try {
       await api.post(`/groups/${id}/join-requests`, { userId, approve: false });
-      alert("Request rejected");
       fetchData();
-    } catch (error) {
-      alert("Failed to reject");
-    }
+    } catch { alert("Failed to reject"); }
   };
 
   const handleLeave = async () => {
     if (!window.confirm("Are you sure you want to leave this group?")) return;
     try {
       await api.post(`/groups/${id}/leave`);
-      alert("You left the group");
       navigate("/groups");
     } catch (error) {
       alert(error.response?.data || "Failed to leave group");
@@ -69,7 +62,6 @@ function GroupDetail() {
     if (!window.confirm(`Remove ${userName} from the group?`)) return;
     try {
       await api.delete(`/groups/${id}/members/${userId}`);
-      alert(`${userName} removed`);
       fetchData();
     } catch (error) {
       alert(error.response?.data || "Failed to remove member");
@@ -77,18 +69,17 @@ function GroupDetail() {
   };
 
   const handleDeleteGroup = async () => {
-    if (!window.confirm("⚠️ Delete this group? This cannot be undone and will remove all members.")) return;
+    if (!window.confirm("⚠️ Delete this group? This cannot be undone.")) return;
     try {
       await api.delete(`/groups/${id}`);
-      alert("Group deleted");
       navigate("/groups");
     } catch (error) {
       alert(error.response?.data || "Failed to delete group");
     }
   };
 
-  if (loading) return <Layout><div className="groups-wrapper"><p>Loading...</p></div></Layout>;
-  if (!group)  return <Layout><div className="groups-wrapper"><p>Group not found.</p></div></Layout>;
+  if (loading) return <Layout><div className="groups-wrapper"><div className="empty-state">Loading...</div></div></Layout>;
+  if (!group)  return <Layout><div className="groups-wrapper"><div className="empty-state">Group not found.</div></div></Layout>;
 
   const approvedMembers = members.filter(m => m.status === "APPROVED");
   const pendingRequests = members.filter(m => m.status === "PENDING");
@@ -99,50 +90,46 @@ function GroupDetail() {
     <Layout>
       <div className="groups-wrapper">
 
-        {/* Group Header */}
-        <div className="page-header">
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        {/* Group Hero */}
+        <div className="gd-hero">
+          <div className="gd-hero-left">
+            <div className="gd-hero-avatar">{group.name?.[0]?.toUpperCase()}</div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div className="gd-hero-title-row">
                 <h1>{group.name}</h1>
-                <span className="group-privacy-tag">{group.privacy}</span>
+                <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
+                  {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
+                </span>
               </div>
-              <p>{group.description}</p>
-              <span className="group-admin">👤 Admin: {adminName}</span>
+              <p className="gd-hero-desc">{group.description}</p>
+              <span className="gd-hero-admin">👤 Admin: {adminName}</span>
             </div>
-            {isMember && (
-              <button 
-                className="primary-btn" 
-                onClick={() => navigate(`/groups/${id}/chat`)}
-                style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}
-              >
-                💬 Open Group Chat
-              </button>
-            )}
           </div>
+          {isMember && (
+            <button className="gd-chat-btn" onClick={() => navigate(`/groups/${id}/chat`)}>
+              💬 Open Chat
+            </button>
+          )}
         </div>
 
-        {/* Pending Requests (admin only) */}
+        {/* Pending Requests — admin only */}
         {isAdmin && pendingRequests.length > 0 && (
-          <div className="group-card" style={{ borderLeft: "4px solid #d97706" }}>
-            <h3>⏳ Pending Join Requests ({pendingRequests.length})</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+          <div className="gd-section">
+            <div className="gd-section-header pending">
+              <h3>⏳ Pending Requests</h3>
+              <span className="gd-count-badge amber">{pendingRequests.length}</span>
+            </div>
+            <div className="gd-members-list">
               {pendingRequests.map((member) => (
-                <div key={member.userId} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "12px 16px", background: "#fffbeb", borderRadius: "10px", border: "1px solid #fde68a",
-                }}>
-                  <div>
+                <div key={member.userId} className="gd-member-row pending-row">
+                  <div className="gd-member-avatar">{(member.userName || "?")[0].toUpperCase()}</div>
+                  <div className="gd-member-info">
                     <strong>{member.userName}</strong>
-                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{member.email}</p>
+                    <span>{member.email}</span>
                   </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button className="primary-btn"
-                      style={{ background: "#16a34a", padding: "6px 16px", fontSize: "12px" }}
-                      onClick={() => handleApprove(member.userId)}>✅ Approve</button>
-                    <button className="primary-btn"
-                      style={{ background: "#ef4444", padding: "6px 16px", fontSize: "12px" }}
-                      onClick={() => handleReject(member.userId)}>❌ Reject</button>
+                  <div className="gd-member-actions">
+                    <button className="gd-btn-approve" onClick={() => handleApprove(member.userId)}>✓ Approve</button>
+                    <button className="gd-btn-reject"  onClick={() => handleReject(member.userId)}>✕ Reject</button>
                   </div>
                 </div>
               ))}
@@ -151,37 +138,25 @@ function GroupDetail() {
         )}
 
         {/* Approved Members */}
-        <div className="group-card">
-          <h3>👥 Members ({approvedMembers.length})</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
+        <div className="gd-section">
+          <div className="gd-section-header">
+            <h3>👥 Members</h3>
+            <span className="gd-count-badge blue">{approvedMembers.length}</span>
+          </div>
+          <div className="gd-members-list">
             {approvedMembers.map((member) => (
-              <div key={member.userId} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "12px 16px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0",
-              }}>
-                <div>
+              <div key={member.userId} className="gd-member-row">
+                <div className="gd-member-avatar">{(member.userName || "?")[0].toUpperCase()}</div>
+                <div className="gd-member-info">
                   <strong>{member.userName}</strong>
-                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{member.email}</p>
+                  <span>{member.email}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{
-                    fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px",
-                    background: member.role === "ADMIN" ? "#eff6ff" : "#f0fdf4",
-                    color: member.role === "ADMIN" ? "#2563eb" : "#16a34a",
-                  }}>
-                    {member.role}
+                <div className="gd-member-actions">
+                  <span className={`gd-role-badge ${member.role === "ADMIN" ? "admin" : "member"}`}>
+                    {member.role === "ADMIN" ? "👑 Admin" : "Member"}
                   </span>
                   {isAdmin && member.role !== "ADMIN" && (
-                    <button
-                      onClick={() => handleRemove(member.userId, member.userName)}
-                      style={{
-                        padding: "4px 12px", fontSize: "11px", fontWeight: 600,
-                        background: "transparent", color: "#dc2626",
-                        border: "1px solid #fca5a5", borderRadius: "8px", cursor: "pointer",
-                      }}
-                      onMouseOver={e => e.target.style.background = "#fee2e2"}
-                      onMouseOut={e => e.target.style.background = "transparent"}
-                    >
+                    <button className="gd-btn-remove" onClick={() => handleRemove(member.userId, member.userName)}>
                       ✕ Remove
                     </button>
                   )}
@@ -191,39 +166,15 @@ function GroupDetail() {
           </div>
         </div>
 
-        {/* Leave button — non-admin members only */}
-        {isMember && !isAdmin && (
-          <div>
-            <button onClick={handleLeave} style={{
-              display: "inline-flex", alignItems: "center", gap: "7px",
-              padding: "9px 22px", background: "transparent", color: "#ef4444",
-              border: "1.5px solid #ef4444", borderRadius: "10px",
-              fontSize: "13px", fontWeight: 600, cursor: "pointer",
-            }}
-              onMouseOver={e => { e.currentTarget.style.background = "#ef4444"; e.currentTarget.style.color = "#fff"; }}
-              onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ef4444"; }}
-            >
-              🚪 Leave Group
-            </button>
-          </div>
-        )}
-
-        {/* Delete Group — admin only */}
-        {isAdmin && (
-          <div>
-            <button
-              onClick={handleDeleteGroup}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "7px",
-                padding: "9px 22px", background: "transparent", color: "#dc2626",
-                border: "1.5px solid #ef4444", borderRadius: "10px",
-                fontSize: "13px", fontWeight: 600, cursor: "pointer",
-              }}
-              onMouseOver={e => { e.currentTarget.style.background = "#ef4444"; e.currentTarget.style.color = "#fff"; }}
-              onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#dc2626"; }}
-            >
-              Delete Group
-            </button>
+        {/* Danger Zone */}
+        {(isMember || isAdmin) && (
+          <div className="gd-danger-zone">
+            {isMember && !isAdmin && (
+              <button className="gd-btn-leave" onClick={handleLeave}>🚪 Leave Group</button>
+            )}
+            {isAdmin && (
+              <button className="gd-btn-delete" onClick={handleDeleteGroup}>🗑 Delete Group</button>
+            )}
           </div>
         )}
 

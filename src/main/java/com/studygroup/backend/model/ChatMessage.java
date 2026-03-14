@@ -33,6 +33,9 @@ public class ChatMessage {
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "file_url", length = 500)
+    private String fileUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageType messageType = MessageType.TEXT;
@@ -100,6 +103,9 @@ public class ChatMessage {
         this.content = content;
         this.messageText = content;
     }
+
+    public String getFileUrl() { return fileUrl; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
 
     public MessageType getMessageType() { return messageType; }
     public void setMessageType(MessageType messageType) { this.messageType = messageType; }
