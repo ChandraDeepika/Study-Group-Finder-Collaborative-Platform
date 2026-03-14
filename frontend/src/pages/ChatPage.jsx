@@ -51,7 +51,6 @@ const ChatPage = () => {
   };
 
   const normalizeMessage = (msg) => {
-    console.log("Normalizing message:", msg);
     return {
       id: msg.id,
       sender: msg.senderName || msg.sender?.name || msg.sender || "Unknown",
@@ -75,7 +74,6 @@ const ChatPage = () => {
         console.log("WebSocket connected!");
         setConnected(true);
         client.subscribe(`/topic/group`, (message) => {
-          console.log("Raw received:", message.body);
           const received = JSON.parse(message.body);
           if (String(received.groupId || received.group?.id) === String(groupId)) {
             setMessages(prev => [...prev, normalizeMessage(received)]);
@@ -94,28 +92,35 @@ const ChatPage = () => {
     stompClientRef.current = client;
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const payload = {
-      groupId: Number(groupId),
-      senderId: currentUser.id,
-      messageText: newMessage.trim(),
-      messageType: "TEXT",
-    };
-
-    console.log("Sending payload:", payload);
-
-    if (!stompClientRef.current?.connected) {
-      console.error("STOMP not connected!");
-      return;
+    // Send via REST API (persists to DB) — api.js interceptor adds JWT automatically
+    try {
+      await api.post(`/groups/${groupId}/chat`, {
+        content: newMessage.trim(),
+        messageType: "TEXT",
+        fileUrl: null
+      });
+    } catch (err) {
+      console.error("REST send failed:", err);
     }
 
-    stompClientRef.current.publish({
-      destination: `/app/chat.sendMessage`,
-      body: JSON.stringify(payload),
-    });
+    // Also broadcast via WebSocket so other users see it instantly
+    if (stompClientRef.current?.connected) {
+      const payload = {
+        groupId: Number(groupId),
+        senderId: currentUser.id,
+        messageText: newMessage.trim(),
+        messageType: "TEXT",
+      };
+      stompClientRef.current.publish({
+        destination: `/app/chat.sendMessage`,
+        body: JSON.stringify(payload),
+      });
+    }
+
     setNewMessage("");
   };
 
