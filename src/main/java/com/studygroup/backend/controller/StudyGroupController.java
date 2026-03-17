@@ -1,5 +1,8 @@
 package com.studygroup.backend.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -9,13 +12,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.studygroup.backend.dto.CreateGroupRequest;
 import com.studygroup.backend.dto.GroupMemberResponse;
 import com.studygroup.backend.dto.GroupResponse;
 import com.studygroup.backend.dto.JoinRequestActionRequest;
+import com.studygroup.backend.model.StudyGroup;
 import com.studygroup.backend.model.User;
 import com.studygroup.backend.model.UserStudyGroup;
+import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.service.StudyGroupService;
 
@@ -25,10 +31,12 @@ public class StudyGroupController {
 
     private final StudyGroupService service;
     private final UserRepository userRepo;
+    private final StudyGroupRepository groupRepo;
 
-    public StudyGroupController(StudyGroupService service, UserRepository userRepo) {
+    public StudyGroupController(StudyGroupService service, UserRepository userRepo, StudyGroupRepository groupRepo) {
         this.service = service;
         this.userRepo = userRepo;
+        this.groupRepo = groupRepo;
     }
 
     // =========================
@@ -178,5 +186,31 @@ public class StudyGroupController {
     @GetMapping("/{id}")
     public GroupResponse getGroup(@PathVariable Long id) {
         return service.getGroupById(id);
+    }
+
+    // =========================
+    // UPLOAD GROUP PROFILE IMAGE
+    // =========================
+    @PostMapping("/{groupId}/profile-image")
+    public ResponseEntity<GroupResponse> uploadGroupProfileImage(
+            @PathVariable Long groupId,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) throws IOException {
+
+        StudyGroup group = groupRepo.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        String original = file.getOriginalFilename();
+        String ext = (original != null && original.contains("."))
+                ? original.substring(original.lastIndexOf(".")).toLowerCase() : ".jpg";
+        String fileName = "group_" + groupId + "_" + System.currentTimeMillis() + ext;
+        Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
+        Files.createDirectories(uploadDir);
+        file.transferTo(uploadDir.resolve(fileName).toFile());
+
+        group.setProfileImage("/uploads/" + fileName);
+        groupRepo.save(group);
+
+        return ResponseEntity.ok(service.getGroupById(groupId));
     }
 }

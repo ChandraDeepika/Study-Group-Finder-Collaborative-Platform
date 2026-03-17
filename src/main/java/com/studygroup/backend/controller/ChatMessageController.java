@@ -55,7 +55,7 @@ public class ChatMessageController {
         Files.createDirectories(uploadDir);
         file.transferTo(uploadDir.resolve(fileName).toFile());
 
-        String fileUrl = "http://localhost:8080/uploads/" + fileName;
+        String fileUrl = "/uploads/" + fileName;
         String[] imageExts = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
         boolean isImage = java.util.Arrays.asList(imageExts).contains(ext);
 

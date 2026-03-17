@@ -1,66 +1,53 @@
-import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import "./Navbar.css";
+import "../styles/navbar.css";
+import ProfileDropdown from "./ProfileDropdown";
+import NotificationBell from "./NotificationBell";
+import { useTheme } from "../context/ThemeContext";
 
-function Navbar({ user }) {
+const NAV_ITEMS = [
+  { to: "/dashboard",       label: "Dashboard" },
+  { to: "/explore-courses", label: "Explore Courses" },
+  { to: "/my-courses",      label: "My Courses" },
+  { to: "/groups",          label: "Groups" },
+  { to: "/admin/requests",  label: "Admin" },
+];
+
+export default function Navbar() {
   const navigate = useNavigate();
-  const [showProfile, setShowProfile] = useState(false);
+  const { dark, toggle } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
+    localStorage.removeItem("user");
     navigate("/login");
   };
 
   return (
-    <nav className="navbar">
+    <header className="navbar">
+      <div className="navbar-inner">
+        <div className="navbar-logo" onClick={() => navigate("/dashboard")}>
+          <span className="navbar-logo-icon">📚</span>
+          <span className="navbar-logo-text">StudyConnect</span>
+        </div>
 
-      {/* Logo */}
-      <div className="nav-logo">StudyConnect</div>
+        <nav className="navbar-links">
+          {NAV_ITEMS.map(({ to, label }) => (
+            <NavLink key={to} to={to} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
 
-      {/* Links */}
-      <div className="nav-links">
-        <NavLink to="/dashboard">Dashboard</NavLink>
-<NavLink to="/explore-courses">Explore Courses</NavLink>
-<NavLink to="/my-courses">My Courses</NavLink>
-<NavLink to="/groups">Groups</NavLink>
-
-        <button onClick={handleLogout} className="logout-btn">
-          Logout
-        </button>
-
-        {/* Profile avatar + dropdown */}
-        {user && (
-          <div
-            className="profile-wrapper"
-            onClick={() => setShowProfile((prev) => !prev)}
-          >
-            <div className="profile-avatar">
-              {user.name ? user.name.charAt(0).toUpperCase() : "S"}
-            </div>
-            <span className="profile-name">{user.name}</span>
-
-            {showProfile && (
-              <div className="profile-dropdown">
-                <h4>Profile Summary</h4>
-                <p><strong>Name:</strong> {user.name || "Not set"}</p>
-                <p><strong>Email:</strong> {user.email || "Not set"}</p>
-                <p><strong>Location:</strong> {user.location || "Not set"}</p>
-                <p><strong>Education:</strong> {user.education || "Not set"}</p>
-                <p><strong>Field:</strong> {user.field || "Not set"}</p>
-                <p><strong>Skills:</strong> {user.skills || "Not set"}</p>
-                <p><strong>Bio:</strong> {user.bio || "Not set"}</p>
-                <button onClick={handleLogout} className="logout-btn">
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="navbar-right">
+          <button className="navbar-theme-btn" onClick={toggle} title={dark ? "Light mode" : "Dark mode"}>
+            {dark ? "☀️" : "🌙"}
+          </button>
+          <NotificationBell />
+          <ProfileDropdown />
+          <button className="navbar-logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
       </div>
-
-    </nav>
+    </header>
   );
 }
-
-export default Navbar;

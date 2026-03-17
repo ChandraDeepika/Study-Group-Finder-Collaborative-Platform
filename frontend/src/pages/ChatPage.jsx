@@ -1,656 +1,588 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import '../styles/ChatPage.css';
-import MessageItem from '../components/MessageItem';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
-import api from '../services/api';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../services/api";
+import Layout from "../components/Layout";
+import { useTheme } from "../context/ThemeContext";
+import "../styles/ChatPage.css";
 
-const EMOJIS = [
-  '😀','😂','😍','🥰','😎','😭','😅','🤔','😴','🥳',
-  '👍','👎','❤️','🔥','🎉','✅','💯','🙏','👏','🤝',
-  '😡','😱','🤣','😇','🥺','😏','🤩','😬','🙄','😤',
-  '🍕','🎮','📚','💻','🎵','⚽','🏆','🌟','💡','🚀',
+const BASE_URL = "http://localhost:8080";
+
+const FILE_TYPES = [
+  { label: "Image",      icon: "🖼️", accept: "image/*" },
+  { label: "Video",      icon: "🎬", accept: "video/*" },
+  { label: "Audio",      icon: "🎵", accept: "audio/*" },
+  { label: "PDF",        icon: "📄", accept: "application/pdf,.pdf" },
+  { label: "Word",       icon: "📝", accept: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+  { label: "PowerPoint", icon: "📊", accept: ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+  { label: "Excel",      icon: "📈", accept: ".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+  { label: "Other",      icon: "📎", accept: ".zip,.rar,.txt,.json,.xml" },
 ];
 
-const ChatPage = () => {
-  const { groupId } = useParams();
-  const navigate = useNavigate();
+const FILE_ICONS = { pdf: "📄", ppt: "📊", word: "📝", excel: "📈", txt: "📃", file: "📎" };
 
-  const [messages, setMessages]             = useState([]);
-  const [newMessage, setNewMessage]         = useState('');
-  const [connected, setConnected]           = useState(false);
-  const [groupName, setGroupName]           = useState('Group Chat');
-  const [loading, setLoading]               = useState(true);
-  const [showEmoji, setShowEmoji]           = useState(false);
-  const [replyTo, setReplyTo]               = useState(null);
-  const [typingUsers, setTypingUsers]       = useState([]);
-  const [uploadProgress, setUploadProgress] = useState(null);
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [showSearch, setShowSearch]         = useState(false);
-  const [memberCount, setMemberCount]       = useState(0);
-  const [members, setMembers]               = useState([]);
-  const [showMembers, setShowMembers]       = useState(false);
+const resolveUrl = (url) =>
+  url ? (url.startsWith("http") ? url : `${BASE_URL}${url}`) : null;
+
+const getFileType = (name = "") => {
+  const ext = name.split(".").pop().toLowerCase();
+  if (["jpg","jpeg","png","gif","webp","bmp","svg"].includes(ext)) return "image";
+  if (["mp4","webm","mov","avi"].includes(ext))                    return "video";
+  if (["mp3","wav","ogg","m4a"].includes(ext))                     return "audio";
+  if (ext === "pdf")                                               return "pdf";
+  if (["ppt","pptx"].includes(ext))                               return "ppt";
+  if (["doc","docx"].includes(ext))                               return "word";
+  if (["xls","xlsx","csv"].includes(ext))                         return "excel";
+  if (ext === "txt")                                              return "txt";
+  return "file";
+};
+
+// Types previewable in browser natively
+const NATIVE_PREVIEW = ["image", "audio", "pdf", "txt"];
+// Types previewable via Google Docs viewer (office formats)
+const GDOCS_PREVIEW  = ["ppt", "word", "excel"];
+const PREVIEWABLE    = [...NATIVE_PREVIEW, ...GDOCS_PREVIEW];
+
+export default function ChatPage() {
+  const { groupId } = useParams();
+  const navigate    = useNavigate();
+  const { dark }    = useTheme();
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const [activeGroup,  setActiveGroup]  = useState(null);
+  const [allGroups,    setAllGroups]    = useState([]);
+  const [messages,     setMessages]     = useState([]);
+  const [newMessage,   setNewMessage]   = useState("");
+  const [othersTyping, setOthersTyping] = useState(false);
+  const [uploading,    setUploading]    = useState(false);
+  const [membersCount, setMembersCount] = useState(0);
+  const [editingId,    setEditingId]    = useState(null);
+  const [editText,     setEditText]     = useState("");
+  const [preview,      setPreview]      = useState(null); // {url, blobUrl, name, type, text}
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const messagesEndRef  = useRef(null);
-  const stompClientRef  = useRef(null);
-  const fileInputRef    = useRef(null);
-  const inputRef        = useRef(null);
-  const typingTimer     = useRef(null);
-  const sentMsgIds      = useRef(new Set()); // track IDs we already added optimistically
+  const othersTypingRef = useRef(null);
+  const fileRef         = useRef();
+  const picRef          = useRef();
+  const fileMenuRef     = useRef();
+  // Track server message IDs only (not optimistic ones)
+  const serverMsgIds    = useRef(new Set());
+  // Stable list of optimistic messages pending confirmation
+  const optimisticMsgs  = useRef([]);
 
-  const currentUser      = JSON.parse(localStorage.getItem('user') || '{}');
-  const currentUserEmail = currentUser.email || '';
-  const currentUserName  = currentUser.name  || '';
+  const groupPicUrl = (g) => resolveUrl(g?.profileImage);
 
-  // ─── Init ────────────────────────────────────────────────
-  useEffect(() => {
-    loadHistory();
-    connectWebSocket();
-    return () => {
-      if (stompClientRef.current) stompClientRef.current.deactivate();
-    };
+  // ── load groups ──────────────────────────────────────────
+  const loadGroups = useCallback(() => {
+    api.get("/groups/my-groups").then(res => {
+      const list = res.data || [];
+      setAllGroups(list);
+      if (groupId) {
+        const found = list.find(g => String(g.id) === String(groupId));
+        setActiveGroup(found || { id: groupId, name: "Study Group" });
+      }
+    }).catch(console.error);
   }, [groupId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    loadGroups();
+    if (groupId) {
+      api.get(`/groups/${groupId}/members`)
+        .then(res => setMembersCount(res.data?.length || 0))
+        .catch(() => setMembersCount(0));
+    }
+  }, [groupId, loadGroups]);
+
+  // ── fetch & merge messages ───────────────────────────────
+  // Key fix: always load from server, merge with pending optimistic msgs
+  const fetchMessages = useCallback(async () => {
+    if (!groupId) return;
+    try {
+      const res = await api.get(`/groups/${groupId}/chat`);
+      const serverMsgs = res.data.map(msg => ({
+        id:          msg.id,
+        sender:      msg.senderName || "User",
+        senderEmail: msg.senderEmail || "",
+        text:        msg.content || "",
+        fileUrl:     resolveUrl(msg.fileUrl),
+        // fileName: backend stores original filename in content for file messages
+        fileName:    msg.fileUrl ? (msg.content || null) : null,
+        time:        new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        read:        true,
+        optimistic:  false,
+      }));
+
+      // detect new messages from others → typing indicator
+      const newIds = serverMsgs.filter(m => !serverMsgIds.current.has(String(m.id)));
+      newIds.forEach(m => serverMsgIds.current.add(String(m.id)));
+      const othersNew = newIds.filter(m => m.senderEmail !== currentUser.email);
+      if (othersNew.length > 0) {
+        setOthersTyping(true);
+        clearTimeout(othersTypingRef.current);
+        othersTypingRef.current = setTimeout(() => setOthersTyping(false), 2000);
+      }
+
+      // Remove confirmed optimistic messages (those whose server ID now exists)
+      optimisticMsgs.current = optimisticMsgs.current.filter(
+        o => !serverMsgs.some(s => String(s.id) === String(o.confirmedId))
+      );
+
+      // Append any still-pending optimistic msgs at the end
+      setMessages([...serverMsgs, ...optimisticMsgs.current]);
+    } catch (err) { console.error("Error loading messages:", err); }
+  }, [groupId, currentUser.email]);
+
+  // Reset on group change — this also fixes "messages gone after re-login"
+  // because serverMsgIds is reset so all messages reload fresh from server
+  useEffect(() => {
+    serverMsgIds.current   = new Set();
+    optimisticMsgs.current = [];
+    setMessages([]);
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (!e.target.closest('.emoji-panel') && !e.target.closest('.emoji-btn'))
-        setShowEmoji(false);
+      if (fileMenuRef.current && !fileMenuRef.current.contains(e.target))
+        setShowFileMenu(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ─── Load history ────────────────────────────────────────
-  const loadHistory = async () => {
-    try {
-      const [groupRes, chatRes, membersRes] = await Promise.all([
-        api.get(`/groups/${groupId}`),
-        api.get(`/groups/${groupId}/chat`),
-        api.get(`/groups/${groupId}/members`),
-      ]);
-      setGroupName(groupRes.data.name);
-      const approved = membersRes.data.filter(m => m.status === 'APPROVED');
-      setMemberCount(approved.length);
-      setMembers(approved);
-      setMessages(chatRes.data.map(normalizeMessage));
-      // Mark messages as read in DB
-      api.put(`/groups/${groupId}/chat/read`).catch(() => {});
-      // Broadcast READ after WS is ready (slight delay to ensure connection)
-      setTimeout(() => {
-        if (stompClientRef.current?.connected) {
-          stompClientRef.current.publish({
-            destination: '/app/chat.sendMessage',
-            body: JSON.stringify({
-              type: 'READ', groupId: Number(groupId),
-              readerEmail: currentUserEmail,
-            }),
-          });
-        }
-      }, 1000);
-    } catch (err) {
-      console.error('Failed to load chat history', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ─── Normalize any message shape ─────────────────────────
-  const normalizeMessage = (msg) => {
-    const senderEmail = msg.senderEmail
-      || (typeof msg.sender === 'object' ? msg.sender?.email : '')
-      || '';
-    const senderName = msg.senderName
-      || (typeof msg.sender === 'object' ? msg.sender?.name : '')
-      || (typeof msg.sender === 'string'  ? msg.sender       : '')
-      || 'Unknown';
-    const rawTime = msg.sentAt || msg.timestamp;
-    return {
-      id:          msg.id,
-      sender:      senderName,
-      senderEmail,
-      avatar:      msg.senderProfileImage || msg.sender?.profileImage || null,
-      text:        msg.content || msg.messageText || '',
-      time:        rawTime
-                     ? new Date(rawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                     : '',
-      fullTime:    rawTime
-                     ? new Date(rawTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-                     : '',
-      groupId:     msg.groupId || msg.group?.id,
-      messageType: (msg.messageType || 'TEXT').toString().toUpperCase(),
-      fileUrl:     msg.fileUrl || null,
-      edited:      msg.edited || false,
-      deleted:     msg.deleted || false,
-      status:      msg.status || 'sent',
-      reactions:   msg.reactions || {},
-    };
-  };
-
-  // ─── WebSocket ───────────────────────────────────────────
-  const connectWebSocket = () => {
-    const token  = localStorage.getItem('token');
-    const socket = new SockJS('http://localhost:8080/ws');
-    const client = new Client({
-      webSocketFactory: () => socket,
-      connectHeaders:   { Authorization: `Bearer ${token}` },
-      reconnectDelay:   5000,
-      onConnect: () => {
-        setConnected(true);
-        client.subscribe('/topic/group', (frame) => {
-          const received = JSON.parse(frame.body);
-          const msgGroupId = received.groupId || received.group?.id;
-          if (String(msgGroupId) !== String(groupId)) return;
-
-          if (received.type === 'TYPING') {
-            handleTypingEvent(received);
-            return;
-          }
-
-          // READ broadcast — update all my sent messages to 'read'
-          if (received.type === 'READ') {
-            if ((received.readerEmail || '') !== currentUserEmail) {
-              setMessages(prev => prev.map(m =>
-                m.senderEmail === currentUserEmail ? { ...m, status: 'read' } : m
-              ));
-            }
-            return;
-          }
-
-          // DELETE broadcast — update locally for all users
-          if (received.type === 'DELETE') {
-            setMessages(prev => prev.map(m =>
-              String(m.id) === String(received.messageId)
-                ? { ...m, deleted: true, text: '[This message was deleted]' }
-                : m
-            ));
-            return;
-          }
-
-          const fromMe = (received.senderEmail || '') === currentUserEmail;
-          if (fromMe) {
-            // We already added this message optimistically — just update status
-            const rid = received.id;
-            if (rid && sentMsgIds.current.has(rid)) return; // already confirmed, skip
-            setMessages(prev => {
-              const tmpIdx = prev.findIndex(m => String(m.id).startsWith('tmp-'));
-              if (tmpIdx !== -1) {
-                const updated = [...prev];
-                updated[tmpIdx] = normalizeMessage(received);
-                if (rid) sentMsgIds.current.add(rid);
-                return updated;
-              }
-              // No tmp found — check if real id already exists (duplicate guard)
-              if (rid && prev.some(m => String(m.id) === String(rid))) return prev;
-              if (rid) sentMsgIds.current.add(rid);
-              return [...prev, normalizeMessage(received)];
-            });
-            return;
-          }
-          // For others: deduplicate by id
-          setMessages(prev => {
-            const rid = received.id;
-            if (rid && prev.some(m => String(m.id) === String(rid))) return prev;
-            return [...prev, normalizeMessage(received)];
-          });
-        });
-      },
-      onDisconnect:  () => setConnected(false),
-      onStompError:  (f) => console.error('STOMP error:', f),
-    });
-    client.activate();
-    stompClientRef.current = client;
-  };
-
-  const handleTypingEvent = (event) => {
-    if (event.senderEmail === currentUserEmail) return;
-    setTypingUsers(prev => {
-      const filtered = prev.filter(u => u !== event.senderName);
-      return event.isTyping ? [...filtered, event.senderName] : filtered;
-    });
-    setTimeout(() => {
-      setTypingUsers(prev => prev.filter(u => u !== event.senderName));
-    }, 3000);
-  };
-
-  // ─── Typing indicator ────────────────────────────────────
-  const handleInputChange = (e) => {
-    setNewMessage(e.target.value);
-    if (stompClientRef.current?.connected) {
-      stompClientRef.current.publish({
-        destination: '/app/chat.sendMessage',
-        body: JSON.stringify({
-          type: 'TYPING', groupId: Number(groupId),
-          senderName: currentUserName, senderEmail: currentUserEmail, isTyping: true,
-        }),
-      });
-      clearTimeout(typingTimer.current);
-      typingTimer.current = setTimeout(() => {
-        stompClientRef.current?.publish({
-          destination: '/app/chat.sendMessage',
-          body: JSON.stringify({
-            type: 'TYPING', groupId: Number(groupId),
-            senderName: currentUserName, senderEmail: currentUserEmail, isTyping: false,
-          }),
-        });
-      }, 2000);
-    }
-  };
-
-  // ─── Delete message ──────────────────────────────────────
-  const handleDeleteMessage = async (msgId) => {
-    // Optimistic tmp messages — just remove
-    if (String(msgId).startsWith('tmp-')) {
-      setMessages(prev => prev.filter(m => m.id !== msgId));
-      return;
-    }
-    try {
-      await api.delete(`/groups/${groupId}/chat/${msgId}`);
-      setMessages(prev => prev.map(m =>
-        m.id === msgId ? { ...m, deleted: true, text: '[This message was deleted]' } : m
-      ));
-      // Broadcast delete so other users see it immediately
-      if (stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/chat.sendMessage',
-          body: JSON.stringify({
-            type: 'DELETE', groupId: Number(groupId),
-            messageId: msgId, senderEmail: currentUserEmail,
-          }),
-        });
-      }
-    } catch (err) {
-      console.error('Delete failed:', err);
-    }
-  };
-
-  // ─── Send text message ───────────────────────────────────
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    const text = newMessage.trim();
-    if (!text) return;
-    const capturedReplyTo = replyTo;
-    setNewMessage('');
-    setReplyTo(null);
-    setShowEmoji(false);
-
-    const tmpId = `tmp-${Date.now()}`;
-    const optimistic = {
-      id: tmpId, sender: currentUserName,
-      senderEmail: currentUserEmail, text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      fullTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
-      messageType: 'TEXT', fileUrl: null, reactions: {}, status: 'sent',
-      replyTo: capturedReplyTo ? { sender: capturedReplyTo.sender, text: capturedReplyTo.text } : null,
-    };
-    setMessages(prev => [...prev, optimistic]);
-
+  // ── send text ────────────────────────────────────────────
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    if (!newMessage.trim()) return;
+    const text = newMessage;
+    setNewMessage("");
     try {
       const res = await api.post(`/groups/${groupId}/chat`, {
-        content: text, messageType: 'TEXT', fileUrl: null,
+        content: text, messageType: "TEXT", fileUrl: null,
       });
-      const saved = res.data;
-      // Update optimistic with real id for sender
-      setMessages(prev => prev.map(m =>
-        m.id === tmpId ? { ...m, id: saved.id, status: saved.status || 'sent' } : m
-      ));
-      if (saved.id) sentMsgIds.current.add(saved.id);
-      // Broadcast to others via WebSocket
-      if (stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/chat.sendMessage',
-          body: JSON.stringify({
-            id: saved.id,
-            groupId: Number(groupId), senderId: currentUser.id,
-            senderName: currentUserName, senderEmail: currentUserEmail,
-            messageText: text, content: text, messageType: 'TEXT',
-            status: saved.status || 'sent',
-            timestamp: saved.sentAt || new Date().toISOString(),
-          }),
-        });
-      }
-    } catch (err) {
-      console.error('Send failed:', err);
-      setMessages(prev => prev.filter(m => m.id !== tmpId));
-    }
+      // Server will return it on next poll; just add to serverMsgIds to avoid duplicate
+      if (res.data?.id) serverMsgIds.current.add(String(res.data.id));
+      fetchMessages();
+    } catch (err) { console.error("Send failed:", err); setNewMessage(text); }
   };
 
-  // ─── File / Image upload ─────────────────────────────────
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  // ── file upload ──────────────────────────────────────────
+  const handleFileSelect = async (file) => {
     if (!file) return;
-    // Reset so same file can be re-selected
-    e.target.value = '';
-
-    if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
-
-    setUploadProgress(0);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // Optimistic placeholder
-    const tmpId = `tmp-${Date.now()}`;
-    const isImage = file.type.startsWith('image/');
+    setShowFileMenu(false);
+    const optimisticId = `opt-${Date.now()}`;
+    const localUrl = URL.createObjectURL(file);
     const optimisticMsg = {
-      id: tmpId,
-      sender: currentUserName, senderEmail: currentUserEmail,
-      text: file.name,
-      fileUrl: isImage ? URL.createObjectURL(file) : null,
-      messageType: isImage ? 'IMAGE' : 'FILE',
-      status: 'sent',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      fullTime: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
-      reactions: {},
+      id: optimisticId, sender: currentUser.name || "You",
+      senderEmail: currentUser.email || "", text: "",
+      fileUrl: localUrl, fileName: file.name,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: false, optimistic: true, confirmedId: null,
     };
+    optimisticMsgs.current = [...optimisticMsgs.current, optimisticMsg];
     setMessages(prev => [...prev, optimisticMsg]);
-
+    setUploading(true);
     try {
-      const res = await api.post(`/groups/${groupId}/chat/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (p) => setUploadProgress(Math.round((p.loaded * 100) / p.total)),
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api.post(`/groups/${groupId}/chat/upload`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      const data = res.data;
-      const fileUrl    = data.fileUrl    || data.url      || null;
-      const fileName   = data.fileName   || data.name     || file.name;
-      const msgType    = (data.messageType || (isImage ? 'IMAGE' : 'FILE')).toString().toUpperCase();
-      const messageId  = data.messageId  || data.id       || null;
-
-      // Replace optimistic with real message
-      setMessages(prev => prev.map(m =>
-        m.id === tmpId
-          ? { ...m, id: messageId ? Number(messageId) : tmpId, text: fileName, fileUrl, messageType: msgType }
-          : m
-      ));
-      if (messageId) sentMsgIds.current.add(Number(messageId));
-
-      if (stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/chat.sendMessage',
-          body: JSON.stringify({
-            id: messageId ? Number(messageId) : null,
-            groupId: Number(groupId), senderId: currentUser.id,
-            senderName: currentUserName, senderEmail: currentUserEmail,
-            messageText: fileName, content: fileName,
-            messageType: msgType, fileUrl, status: 'sent',
-            timestamp: new Date().toISOString(),
-          }),
-        });
-      }
+      const d = res.data;
+      const confirmedId = d.messageId || d.id;
+      // Mark optimistic as confirmed so next poll removes it (use String for safe comparison)
+      optimisticMsgs.current = optimisticMsgs.current.map(o =>
+        o.id === optimisticId ? { ...o, confirmedId: String(confirmedId) } : o
+      );
+      if (confirmedId) serverMsgIds.current.add(String(confirmedId));
+      // Immediately fetch so the real message replaces optimistic
+      await fetchMessages();
     } catch (err) {
-      console.error('Upload failed:', err);
-      // Remove optimistic on failure
-      setMessages(prev => prev.filter(m => m.id !== tmpId));
-      alert('Upload failed. Please try again.');
-    } finally {
-      setUploadProgress(null);
+      console.error("Upload failed:", err);
+      optimisticMsgs.current = optimisticMsgs.current.filter(o => o.id !== optimisticId);
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+    } finally { setUploading(false); }
+  };
+
+  const openFilePicker = (accept) => { fileRef.current.accept = accept; fileRef.current.click(); };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind === "file") { e.preventDefault(); handleFileSelect(item.getAsFile()); return; }
     }
   };
 
-  // ─── Emoji ───────────────────────────────────────────────
-  const insertEmoji = (emoji) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
+  // ── edit ─────────────────────────────────────────────────
+  const startEdit  = (msg) => { setEditingId(msg.id); setEditText(msg.text); };
+  const saveEdit   = async () => {
+    if (!editText.trim()) return;
+    setMessages(prev => prev.map(m => m.id === editingId ? { ...m, text: editText } : m));
+    setEditingId(null); setEditText("");
+  };
+  const cancelEdit = () => { setEditingId(null); setEditText(""); };
+
+  // ── blob fetch ───────────────────────────────────────────
+  const fetchBlob = async (url) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error("fetch failed");
+    return res.blob();
   };
 
-  // ─── Reaction ────────────────────────────────────────────
-  const addReaction = (msgId, emoji) => {
-    setMessages(prev => prev.map(m => {
-      if (m.id !== msgId) return m;
-      const reactions = { ...m.reactions };
-      reactions[emoji] = (reactions[emoji] || 0) + 1;
-      return { ...m, reactions };
-    }));
+  // ── download ─────────────────────────────────────────────
+  const handleDownload = async (url, name) => {
+    try {
+      const blob = await fetchBlob(url);
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl; a.download = name || "file";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch { window.open(url, "_blank"); }
   };
 
-  // ─── Search filter ───────────────────────────────────────
-  const filteredMessages = searchQuery
-    ? messages.filter(m => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages;
-
-  // ─── Avatar helper ───────────────────────────────────────
-  const getAvatar = (msg) => {
-    if (msg.avatar) return <img src={`http://localhost:8080/uploads/${msg.avatar}`} alt="" className="avatar-img" />;
-    return <div className="avatar-fallback">{(msg.sender || '?')[0].toUpperCase()}</div>;
+  // ── open preview ─────────────────────────────────────────
+  const openPreview = async (url, name, type) => {
+    // Office formats: use Google Docs viewer with the public URL
+    if (GDOCS_PREVIEW.includes(type)) {
+      setPreview({ url, blobUrl: null, name, type, text: null, gdocsUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` });
+      return;
+    }
+    setPreviewLoading(true);
+    setPreview({ url, blobUrl: null, name, type, text: null, gdocsUrl: null });
+    try {
+      const blob = await fetchBlob(url);
+      if (type === "txt") {
+        const text = await blob.text();
+        setPreview({ url, blobUrl: null, name, type, text, gdocsUrl: null });
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        setPreview({ url, blobUrl, name, type, text: null, gdocsUrl: null });
+      }
+    } catch {
+      setPreview({ url, blobUrl: url, name, type, text: null, gdocsUrl: null });
+    } finally { setPreviewLoading(false); }
   };
 
-  // ─── Date separator ──────────────────────────────────────
-  const renderMessages = () => {
-    let lastDate = '';
-    return filteredMessages.map((msg, index) => {
-      const isMe = !!currentUserEmail && msg.senderEmail === currentUserEmail;
-      const msgDate = msg.fullTime ? msg.fullTime.split(',')[0] : '';
-      const showDate = msgDate && msgDate !== lastDate;
-      if (showDate) lastDate = msgDate;
-      return (
-        <React.Fragment key={msg.id || index}>
-          {showDate && <div className="date-separator"><span>{msgDate}</span></div>}
-          <MessageItem
-            message={msg}
-            isSentByMe={isMe}
-            onReply={() => setReplyTo(msg)}
-            onReact={(emoji) => addReaction(msg.id, emoji)}
-            onDelete={handleDeleteMessage}
-            getAvatar={getAvatar}
-          />
-        </React.Fragment>
-      );
-    });
+  // ── group pic upload ─────────────────────────────────────
+  const handleGroupPicUpload = async (file, gId) => {
+    if (!file) return;
+    setUploadingPic(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api.post(`/groups/${gId}/profile-image`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const newPic = res.data.profileImage;
+      setAllGroups(prev => prev.map(g => String(g.id) === String(gId) ? { ...g, profileImage: newPic } : g));
+      if (String(gId) === String(groupId))
+        setActiveGroup(prev => ({ ...prev, profileImage: newPic }));
+    } catch (err) { console.error("Pic upload failed:", err); }
+    finally { setUploadingPic(false); }
   };
 
-  // ─── Render ──────────────────────────────────────────────
+  // ── render file in bubble ────────────────────────────────
+  const renderFilePreview = (msg) => {
+    if (!msg.fileUrl) return null;
+    const type = getFileType(msg.fileName || "");
+    const canPreview = PREVIEWABLE.includes(type);
+
+    if (type === "image") return (
+      <div className="cp-img-wrap">
+        <img src={msg.fileUrl} alt={msg.fileName} className="cp-msg-img"
+          onClick={() => openPreview(msg.fileUrl, msg.fileName, type)}
+          onError={e => { e.target.style.display = "none"; }} />
+        <button className="cp-img-dl" onClick={() => handleDownload(msg.fileUrl, msg.fileName)} title="Download">⬇</button>
+      </div>
+    );
+    if (type === "video") return (
+      <div className="cp-video-wrap">
+        <VideoBlobPlayer url={msg.fileUrl} />
+        <button className="cp-file-dl-btn" onClick={() => handleDownload(msg.fileUrl, msg.fileName)}>⬇ Download</button>
+      </div>
+    );
+    if (type === "audio") return (
+      <div className="cp-audio-wrap">
+        <audio controls src={msg.fileUrl} className="cp-msg-audio" />
+        <button className="cp-file-dl-btn" onClick={() => handleDownload(msg.fileUrl, msg.fileName)}>⬇ Download</button>
+      </div>
+    );
+    // All document types — show card with preview button if previewable
+    return (
+      <div className="cp-msg-file">
+        <span className="cp-msg-file-icon">{FILE_ICONS[type] || "📎"}</span>
+        <div className="cp-msg-file-info">
+          <span className="cp-msg-file-name">{msg.fileName}</span>
+          <span className="cp-msg-file-type">{type.toUpperCase()}</span>
+        </div>
+        <div className="cp-msg-file-actions">
+          {canPreview && (
+            <button className="cp-file-action-btn" title="Preview"
+              onClick={() => openPreview(msg.fileUrl, msg.fileName, type)}>👁</button>
+          )}
+          <button className="cp-file-action-btn" title="Download"
+            onClick={() => handleDownload(msg.fileUrl, msg.fileName)}>⬇</button>
+        </div>
+      </div>
+    );
+  };
+
+  // Video needs blob src because <video> can't send auth headers
+  const VideoBlobPlayer = ({ url }) => {
+    const [blobSrc, setBlobSrc] = useState(null);
+    useEffect(() => {
+      let objectUrl;
+      // only fetch from server URLs, not local blob: URLs
+      if (url && !url.startsWith("blob:")) {
+        fetchBlob(url).then(blob => {
+          objectUrl = URL.createObjectURL(blob);
+          setBlobSrc(objectUrl);
+        }).catch(() => setBlobSrc(url));
+      } else {
+        setBlobSrc(url);
+      }
+      return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+    }, [url]);
+    if (!blobSrc) return <div className="cp-video-loading">Loading video…</div>;
+    return <video controls src={blobSrc} className="cp-msg-video" />;
+  };
+
+  const ReadTick = ({ read }) => (
+    <span className={`cp-tick ${read ? "read" : ""}`}>✓✓</span>
+  );
+
+  if (!groupId) {
+    return (
+      <Layout>
+        <div className="cp-no-group">
+          <div className="cp-no-group-icon">💬</div>
+          <h2>No group selected</h2>
+          <p>Go to Groups and open a chat</p>
+          <button onClick={() => navigate("/groups")}>Browse Groups</button>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="chat-page-wrapper">
+      <div className="cp-shell-wrap">
 
-        {/* ── Header ── */}
-        <div className="chat-topbar">
-          <button className="chat-back-btn" onClick={() => navigate(`/groups/${groupId}`)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
-          </button>
-
-          <div className="chat-topbar-info">
-            <div className="chat-topbar-avatar">{groupName[0]?.toUpperCase()}</div>
-            <div>
-              <div className="chat-topbar-name">{groupName}</div>
-              <div className="chat-topbar-meta">
-                {memberCount > 0 && <span>{memberCount} members · </span>}
-                <span className={connected ? 'status-live' : 'status-connecting'}>
-                  {connected ? '● Live' : '○ Connecting...'}
-                </span>
-              </div>
-            </div>
+        {/* ── GROUPS SIDEBAR ──────────────────────────────── */}
+        <div className="cp-groups-sidebar">
+          <div className="cp-gs-header">
+            <span className="cp-gs-header-icon">💬</span>
+            <span className="cp-gs-header-title">My Groups</span>
+            <span className="cp-gs-count">{allGroups.length}</span>
           </div>
-
-          <div className="chat-topbar-actions">
-            <button className="icon-btn" title="Search" onClick={() => setShowSearch(s => !s)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-            </button>
-            <button
-              className={`icon-btn ${showMembers ? 'icon-btn-active' : ''}`}
-              title="Members"
-              onClick={() => setShowMembers(s => !s)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </button>
+          <div className="cp-gs-list">
+            {allGroups.length === 0 && (
+              <div className="cp-gs-empty"><span>🏫</span><p>No groups yet</p></div>
+            )}
+            {allGroups.map(g => {
+              const isActive = String(g.id) === String(groupId);
+              const isAdmin  = g.role === "ADMIN";
+              const pic      = groupPicUrl(g);
+              return (
+                <div key={g.id}
+                  className={`cp-gs-item ${isActive ? "active" : ""}`}
+                  onClick={() => navigate(`/groups/${g.id}/chat`)}
+                >
+                  <div className="cp-gs-avatar-wrap">
+                    {pic
+                      ? <img src={pic} alt={g.name} className="cp-gs-avatar-img" />
+                      : <div className="cp-gs-avatar">{g.name?.[0]?.toUpperCase()}</div>
+                    }
+                    {isAdmin && (
+                      <>
+                        <input ref={isActive ? picRef : null} type="file" accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={e => { handleGroupPicUpload(e.target.files[0], g.id); e.target.value = ""; }} />
+                        <button className="cp-gs-pic-btn" title="Change group photo"
+                          onClick={e => { e.stopPropagation(); picRef.current?.click(); }}
+                          disabled={uploadingPic}>
+                          {uploadingPic && isActive ? "⏳" : "📷"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <div className="cp-gs-info">
+                    <div className="cp-gs-name">{g.name}</div>
+                    <div className="cp-gs-meta">
+                      <span className={`cp-gs-badge ${g.privacy === "PRIVATE" ? "priv" : "pub"}`}>
+                        {g.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
+                      </span>
+                      {g.courseName && <span className="cp-gs-course">{g.courseName}</span>}
+                    </div>
+                    {isAdmin && <span className="cp-gs-role">Admin</span>}
+                  </div>
+                  {isActive && <span className="cp-gs-active-indicator" />}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* ── Search bar ── */}
-        {showSearch && (
-          <div className="chat-search-bar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              autoFocus
-              placeholder="Search messages..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && <button onClick={() => setSearchQuery('')}>✕</button>}
+        <div className="cp-shell">
+
+          {/* ── HEADER ──────────────────────────────────────── */}
+          <div className="cp-header">
+            <div className="cp-header-left">
+              <button className="cp-back-btn" onClick={() => navigate(`/groups/${groupId}`)}>←</button>
+              <div className="cp-header-avatar">
+                {groupPicUrl(activeGroup)
+                  ? <img src={groupPicUrl(activeGroup)} alt={activeGroup?.name}
+                      style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"10px" }} />
+                  : activeGroup?.name?.charAt(0).toUpperCase() || "G"
+                }
+              </div>
+              <div className="cp-header-info">
+                <div className="cp-header-name">{activeGroup?.name || "Study Group"}</div>
+                <div className="cp-header-status">
+                  <span className="cp-online-dot" />
+                  <span>{membersCount > 0 ? `${membersCount} members` : "Active"}</span>
+                </div>
+              </div>
+            </div>
+            <div className="cp-header-actions">
+              <button className="cp-action-btn" title="Voice Call" onClick={() => alert("Voice call coming soon!")}>📞</button>
+              <button className="cp-action-btn" title="Video Call" onClick={() => alert("Video call coming soon!")}>📹</button>
+              <button className="cp-action-btn" title="Group Info" onClick={() => navigate(`/groups/${groupId}`)}>ℹ️</button>
+            </div>
           </div>
-        )}
 
-        {/* ── Body: messages + optional members panel ── */}
-        <div className="chat-body">
-
-          {/* ── Messages area ── */}
-          <div className="chat-messages-area">
-            {loading ? (
-              <div className="chat-center-state">
-                <div className="chat-spinner" />
-                <p>Loading messages...</p>
-              </div>
-            ) : filteredMessages.length === 0 ? (
-              <div className="chat-center-state">
-                <div className="chat-empty-icon">💬</div>
-                <p>{searchQuery ? 'No messages match your search.' : 'No messages yet. Say hello! 👋'}</p>
-              </div>
-            ) : (
-              renderMessages()
+          {/* ── MESSAGES ────────────────────────────────────── */}
+          <div className="cp-messages">
+            {messages.length === 0 && (
+              <div className="cp-empty"><span>🎉</span><p>No messages yet — say hello!</p></div>
             )}
-
-            {uploadProgress !== null && (
-              <div className="upload-progress-bar">
-                <div className="upload-progress-fill" style={{ width: `${uploadProgress}%` }} />
-                <span>Uploading... {uploadProgress}%</span>
-              </div>
-            )}
-
-            {typingUsers.length > 0 && (
-              <div className="typing-indicator">
-                <span className="typing-dots"><span/><span/><span/></span>
-                <span className="typing-text">
-                  {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-                </span>
-              </div>
-            )}
-
+            {messages.map(msg => {
+              const isMe = msg.senderEmail === currentUser.email;
+              return (
+                <div key={msg.id} className={`cp-msg-row ${isMe ? "me" : "other"}`}>
+                  {!isMe && <div className="cp-msg-avatar">{msg.sender?.charAt(0).toUpperCase()}</div>}
+                  <div className={`cp-msg-bubble ${isMe ? "me" : "other"} ${msg.optimistic ? "optimistic" : ""}`}>
+                    {!isMe && <div className="cp-msg-sender">{msg.sender}</div>}
+                    {editingId === msg.id ? (
+                      <div className="cp-edit-wrap">
+                        <input className="cp-edit-input" value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                          autoFocus />
+                        <div className="cp-edit-actions">
+                          <button onClick={saveEdit}>Save</button>
+                          <button onClick={cancelEdit}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {msg.text && <div className="cp-msg-text">{msg.text}</div>}
+                        {renderFilePreview(msg)}
+                      </>
+                    )}
+                    <div className="cp-msg-footer">
+                      <span className="cp-msg-time">{msg.time}</span>
+                      {isMe && editingId !== msg.id && msg.text && !msg.optimistic && (
+                        <button className="cp-edit-btn" onClick={() => startEdit(msg)} title="Edit">✏️</button>
+                      )}
+                      {isMe && <ReadTick read={msg.read} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {uploading && <div className="cp-uploading">Uploading...</div>}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* ── Members side panel ── */}
-          {showMembers && (
-            <div className="members-panel">
-              <div className="members-panel-header">
-                <span>Members ({memberCount})</span>
-                <button className="members-panel-close" onClick={() => setShowMembers(false)}>✕</button>
-              </div>
-              <div className="members-panel-list">
-                {members.map(m => (
-                  <div key={m.userId} className="member-item">
-                    <div className="member-avatar">
-                      {m.profileImage
-                        ? <img src={`http://localhost:8080/uploads/${m.profileImage}`} alt="" />
-                        : <span>{(m.userName || '?')[0].toUpperCase()}</span>
-                      }
-                    </div>
-                    <div className="member-info">
-                      <span className="member-name">{m.userName}</span>
-                      <span className="member-role">{m.role === 'ADMIN' ? '👑 Admin' : 'Member'}</span>
-                    </div>
+          {othersTyping && (
+            <div className="cp-typing">
+              <span className="cp-typing-dots"><span /><span /><span /></span>
+              Someone is typing
+            </div>
+          )}
+
+          {/* ── INPUT ───────────────────────────────────────── */}
+          <div className="cp-input-wrap">
+            <input ref={fileRef} type="file" style={{ display: "none" }}
+              onChange={e => { handleFileSelect(e.target.files[0]); e.target.value = ""; }} />
+
+            <div className="cp-file-menu-wrap" ref={fileMenuRef}>
+              <button className="cp-attach-btn" title="Share file"
+                onClick={() => setShowFileMenu(p => !p)}>📎</button>
+              {showFileMenu && (
+                <div className="cp-file-menu">
+                  {FILE_TYPES.map(ft => (
+                    <button key={ft.label} className="cp-file-menu-item"
+                      onClick={() => openFilePicker(ft.accept)}>
+                      <span className="cp-file-menu-icon">{ft.icon}</span>
+                      <span>{ft.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <textarea className="cp-input"
+              placeholder="Type a message… (Enter to send)"
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              onPaste={handlePaste}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              rows={1}
+            />
+            <button className="cp-send-btn" onClick={handleSend} disabled={!newMessage.trim()}>➤</button>
+          </div>
+
+          {/* ── FILE PREVIEW MODAL ──────────────────────────── */}
+          {preview && (
+            <div className="cp-preview-overlay" onClick={() => setPreview(null)}>
+              <div className="cp-preview-modal" onClick={e => e.stopPropagation()}>
+                <div className="cp-preview-header">
+                  <span className="cp-preview-title">{preview.name}</span>
+                  <div className="cp-preview-header-actions">
+                    <button className="cp-preview-dl-btn"
+                      onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download</button>
+                    <button className="cp-preview-close" onClick={() => setPreview(null)}>✕</button>
                   </div>
-                ))}
+                </div>
+                <div className="cp-preview-body">
+                  {previewLoading && <div className="cp-preview-loading">Loading preview…</div>}
+                  {!previewLoading && preview.type === "image" && <img src={preview.blobUrl} alt={preview.name} />}
+                  {!previewLoading && preview.type === "video" && <video controls src={preview.blobUrl} autoPlay style={{maxWidth:"100%",maxHeight:"65vh"}} />}
+                  {!previewLoading && preview.type === "audio" && <audio controls src={preview.blobUrl} autoPlay style={{width:"100%"}} />}
+                  {!previewLoading && preview.type === "pdf"   && <iframe src={preview.blobUrl} title={preview.name} style={{width:"100%",height:"65vh",border:"none"}} />}
+                  {!previewLoading && preview.type === "txt"   && (
+                    <pre className="cp-preview-text">{preview.text}</pre>
+                  )}
+                  {!previewLoading && preview.gdocsUrl && (
+                    <iframe src={preview.gdocsUrl} title={preview.name} style={{width:"100%",height:"65vh",border:"none"}} />
+                  )}
+                  {!previewLoading && !PREVIEWABLE.includes(preview.type) && (
+                    <div className="cp-preview-unsupported">
+                      <span>{FILE_ICONS[preview.type] || "📎"}</span>
+                      <p>{preview.name}</p>
+                      <p>This file type cannot be previewed in the browser.</p>
+                      <button onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download to open</button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* ── Reply preview ── */}
-        {replyTo && (
-          <div className="reply-preview">
-            <div className="reply-preview-content">
-              <span className="reply-preview-sender">{replyTo.sender}</span>
-              <span className="reply-preview-text">{replyTo.text?.slice(0, 80)}</span>
-            </div>
-            <button className="reply-close-btn" onClick={() => setReplyTo(null)}>✕</button>
-          </div>
-        )}
-
-        {/* ── Emoji panel ── */}
-        {showEmoji && (
-          <div className="emoji-panel">
-            {EMOJIS.map(e => (
-              <button key={e} className="emoji-item" onClick={() => insertEmoji(e)}>{e}</button>
-            ))}
-          </div>
-        )}
-
-        {/* ── Input area ── */}
-        <div className="chat-input-area">
-          <button
-            type="button"
-            className="icon-btn emoji-btn"
-            title="Emoji"
-            onClick={() => setShowEmoji(s => !s)}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M8 13s1.5 2 4 2 4-2 4-2"/>
-              <line x1="9" y1="9" x2="9.01" y2="9"/>
-              <line x1="15" y1="9" x2="15.01" y2="9"/>
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className="icon-btn attach-btn"
-            title="Attach file or image"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </svg>
-          </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-            onChange={handleFileUpload}
-          />
-
-          <form className="chat-input-form" onSubmit={handleSendMessage}>
-            <input
-              ref={inputRef}
-              type="text"
-              className="chat-input"
-              placeholder={connected ? 'Type a message...' : 'Connecting...'}
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); }
-              }}
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              className={`send-btn ${newMessage.trim() ? 'send-btn-active' : ''}`}
-              disabled={!newMessage.trim()}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z"/>
-              </svg>
-            </button>
-          </form>
-        </div>
-
       </div>
     </Layout>
   );
-};
-
-export default ChatPage;
+}

@@ -80,7 +80,8 @@ public class StudyGroupService {
                 joinStatus,
                 role,
                 memberCount,
-                courseName
+                courseName,
+                g.getProfileImage()
         );
     }
 
