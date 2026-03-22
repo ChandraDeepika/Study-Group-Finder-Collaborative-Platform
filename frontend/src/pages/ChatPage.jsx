@@ -7,18 +7,26 @@ import "../styles/ChatPage.css";
 
 const BASE_URL = "http://localhost:8080";
 
+// ── File type menu (no audio/video) ──────────────────────────
 const FILE_TYPES = [
-  { label: "Image",      icon: "🖼️", accept: "image/*" },
-  { label: "Video",      icon: "🎬", accept: "video/*" },
-  { label: "Audio",      icon: "🎵", accept: "audio/*" },
-  { label: "PDF",        icon: "📄", accept: "application/pdf,.pdf" },
-  { label: "Word",       icon: "📝", accept: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
-  { label: "PowerPoint", icon: "📊", accept: ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" },
-  { label: "Excel",      icon: "📈", accept: ".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
-  { label: "Other",      icon: "📎", accept: ".zip,.rar,.txt,.json,.xml" },
+  { label: "Image",       icon: "🖼️",  accept: "image/*" },
+  { label: "PDF",         icon: "📄",  accept: ".pdf" },
+  { label: "Word",        icon: "📝",  accept: ".doc,.docx" },
+  { label: "PowerPoint",  icon: "📊",  accept: ".ppt,.pptx" },
+  { label: "Excel / CSV", icon: "📈",  accept: ".xls,.xlsx,.csv" },
+  { label: "Other",       icon: "📎",  accept: "" },
 ];
 
-const FILE_ICONS = { pdf: "📄", ppt: "📊", word: "📝", excel: "📈", txt: "📃", file: "📎" };
+const FILE_ICONS = { pdf: "📄", ppt: "📊", word: "📝", excel: "📈", csv: "📊", txt: "📃", file: "📎" };
+
+const MIME_TYPES = {
+  pdf:   "application/pdf",
+  word:  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ppt:   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  excel: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv:   "text/csv",
+  txt:   "text/plain",
+};
 
 const resolveUrl = (url) =>
   url ? (url.startsWith("http") ? url : `${BASE_URL}${url}`) : null;
@@ -26,21 +34,20 @@ const resolveUrl = (url) =>
 const getFileType = (name = "") => {
   const ext = name.split(".").pop().toLowerCase();
   if (["jpg","jpeg","png","gif","webp","bmp","svg"].includes(ext)) return "image";
-  if (["mp4","webm","mov","avi"].includes(ext))                    return "video";
-  if (["mp3","wav","ogg","m4a"].includes(ext))                     return "audio";
   if (ext === "pdf")                                               return "pdf";
   if (["ppt","pptx"].includes(ext))                               return "ppt";
   if (["doc","docx"].includes(ext))                               return "word";
-  if (["xls","xlsx","csv"].includes(ext))                         return "excel";
+  if (["xls","xlsx"].includes(ext))                               return "excel";
+  if (ext === "csv")                                              return "csv";
   if (ext === "txt")                                              return "txt";
   return "file";
 };
 
-// Types previewable in browser natively
-const NATIVE_PREVIEW = ["image", "audio", "pdf", "txt"];
-// Types previewable via Google Docs viewer (office formats)
-const GDOCS_PREVIEW  = ["ppt", "word", "excel"];
-const PREVIEWABLE    = [...NATIVE_PREVIEW, ...GDOCS_PREVIEW];
+// image + pdf + txt + csv can be previewed natively in browser
+const NATIVE_PREVIEW = ["image", "pdf", "txt", "csv"];
+// office files: show download-only card (browser can't render them)
+const OFFICE_TYPES   = ["word", "ppt", "excel"];
+const PREVIEWABLE    = [...NATIVE_PREVIEW, ...OFFICE_TYPES];
 
 export default function ChatPage() {
   const { groupId } = useParams();
@@ -48,18 +55,18 @@ export default function ChatPage() {
   const { dark }    = useTheme();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const [activeGroup,  setActiveGroup]  = useState(null);
-  const [allGroups,    setAllGroups]    = useState([]);
-  const [messages,     setMessages]     = useState([]);
-  const [newMessage,   setNewMessage]   = useState("");
-  const [othersTyping, setOthersTyping] = useState(false);
-  const [uploading,    setUploading]    = useState(false);
-  const [membersCount, setMembersCount] = useState(0);
-  const [editingId,    setEditingId]    = useState(null);
-  const [editText,     setEditText]     = useState("");
-  const [preview,      setPreview]      = useState(null); // {url, blobUrl, name, type, text}
-  const [showFileMenu, setShowFileMenu] = useState(false);
-  const [uploadingPic, setUploadingPic] = useState(false);
+  const [activeGroup,    setActiveGroup]    = useState(null);
+  const [allGroups,      setAllGroups]      = useState([]);
+  const [messages,       setMessages]       = useState([]);
+  const [newMessage,     setNewMessage]     = useState("");
+  const [othersTyping,   setOthersTyping]   = useState(false);
+  const [uploading,      setUploading]      = useState(false);
+  const [membersCount,   setMembersCount]   = useState(0);
+  const [editingId,      setEditingId]      = useState(null);
+  const [editText,       setEditText]       = useState("");
+  const [preview,        setPreview]        = useState(null);
+  const [showFileMenu,   setShowFileMenu]   = useState(false);
+  const [uploadingPic,   setUploadingPic]   = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const messagesEndRef  = useRef(null);
@@ -67,14 +74,12 @@ export default function ChatPage() {
   const fileRef         = useRef();
   const picRef          = useRef();
   const fileMenuRef     = useRef();
-  // Track server message IDs only (not optimistic ones)
   const serverMsgIds    = useRef(new Set());
-  // Stable list of optimistic messages pending confirmation
   const optimisticMsgs  = useRef([]);
 
   const groupPicUrl = (g) => resolveUrl(g?.profileImage);
 
-  // ── load groups ──────────────────────────────────────────
+  // ── load groups ───────────────────────────────────────────
   const loadGroups = useCallback(() => {
     api.get("/groups/my-groups").then(res => {
       const list = res.data || [];
@@ -95,8 +100,7 @@ export default function ChatPage() {
     }
   }, [groupId, loadGroups]);
 
-  // ── fetch & merge messages ───────────────────────────────
-  // Key fix: always load from server, merge with pending optimistic msgs
+  // ── fetch & merge messages ────────────────────────────────
   const fetchMessages = useCallback(async () => {
     if (!groupId) return;
     try {
@@ -107,14 +111,12 @@ export default function ChatPage() {
         senderEmail: msg.senderEmail || "",
         text:        msg.content || "",
         fileUrl:     resolveUrl(msg.fileUrl),
-        // fileName: backend stores original filename in content for file messages
         fileName:    msg.fileUrl ? (msg.content || null) : null,
         time:        new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         read:        true,
         optimistic:  false,
       }));
 
-      // detect new messages from others → typing indicator
       const newIds = serverMsgs.filter(m => !serverMsgIds.current.has(String(m.id)));
       newIds.forEach(m => serverMsgIds.current.add(String(m.id)));
       const othersNew = newIds.filter(m => m.senderEmail !== currentUser.email);
@@ -124,18 +126,13 @@ export default function ChatPage() {
         othersTypingRef.current = setTimeout(() => setOthersTyping(false), 2000);
       }
 
-      // Remove confirmed optimistic messages (those whose server ID now exists)
       optimisticMsgs.current = optimisticMsgs.current.filter(
         o => !serverMsgs.some(s => String(s.id) === String(o.confirmedId))
       );
-
-      // Append any still-pending optimistic msgs at the end
       setMessages([...serverMsgs, ...optimisticMsgs.current]);
     } catch (err) { console.error("Error loading messages:", err); }
   }, [groupId, currentUser.email]);
 
-  // Reset on group change — this also fixes "messages gone after re-login"
-  // because serverMsgIds is reset so all messages reload fresh from server
   useEffect(() => {
     serverMsgIds.current   = new Set();
     optimisticMsgs.current = [];
@@ -158,7 +155,7 @@ export default function ChatPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── send text ────────────────────────────────────────────
+  // ── send text ─────────────────────────────────────────────
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!newMessage.trim()) return;
@@ -168,13 +165,12 @@ export default function ChatPage() {
       const res = await api.post(`/groups/${groupId}/chat`, {
         content: text, messageType: "TEXT", fileUrl: null,
       });
-      // Server will return it on next poll; just add to serverMsgIds to avoid duplicate
       if (res.data?.id) serverMsgIds.current.add(String(res.data.id));
       fetchMessages();
     } catch (err) { console.error("Send failed:", err); setNewMessage(text); }
   };
 
-  // ── file upload ──────────────────────────────────────────
+  // ── file upload ───────────────────────────────────────────
   const handleFileSelect = async (file) => {
     if (!file) return;
     setShowFileMenu(false);
@@ -193,26 +189,30 @@ export default function ChatPage() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await api.post(`/groups/${groupId}/chat/upload`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const d = res.data;
-      const confirmedId = d.messageId || d.id;
-      // Mark optimistic as confirmed so next poll removes it (use String for safe comparison)
+      // Do NOT set Content-Type manually — axios sets multipart/form-data + boundary automatically
+      const res = await api.post(`/groups/${groupId}/chat/upload`, form);
+      const confirmedId = String(res.data.messageId || res.data.id || "");
       optimisticMsgs.current = optimisticMsgs.current.map(o =>
-        o.id === optimisticId ? { ...o, confirmedId: String(confirmedId) } : o
+        o.id === optimisticId ? { ...o, confirmedId } : o
       );
-      if (confirmedId) serverMsgIds.current.add(String(confirmedId));
-      // Immediately fetch so the real message replaces optimistic
+      if (confirmedId) serverMsgIds.current.add(confirmedId);
       await fetchMessages();
     } catch (err) {
       console.error("Upload failed:", err);
       optimisticMsgs.current = optimisticMsgs.current.filter(o => o.id !== optimisticId);
       setMessages(prev => prev.filter(m => m.id !== optimisticId));
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const openFilePicker = (accept) => { fileRef.current.accept = accept; fileRef.current.click(); };
+  // Defer click to next tick so accept attribute is applied before dialog opens
+  const openFilePicker = (accept) => {
+    const input = fileRef.current;
+    input.value  = "";
+    input.accept = accept; // "" means no filter (Other)
+    setTimeout(() => input.click(), 0);
+  };
 
   const handlePaste = (e) => {
     const items = e.clipboardData?.items;
@@ -222,7 +222,7 @@ export default function ChatPage() {
     }
   };
 
-  // ── edit ─────────────────────────────────────────────────
+  // ── edit ──────────────────────────────────────────────────
   const startEdit  = (msg) => { setEditingId(msg.id); setEditText(msg.text); };
   const saveEdit   = async () => {
     if (!editText.trim()) return;
@@ -231,7 +231,7 @@ export default function ChatPage() {
   };
   const cancelEdit = () => { setEditingId(null); setEditText(""); };
 
-  // ── blob fetch ───────────────────────────────────────────
+  // ── blob fetch (auth header) ──────────────────────────────
   const fetchBlob = async (url) => {
     const token = localStorage.getItem("token");
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -239,10 +239,10 @@ export default function ChatPage() {
     return res.blob();
   };
 
-  // ── download ─────────────────────────────────────────────
+  // ── download ──────────────────────────────────────────────
   const handleDownload = async (url, name) => {
     try {
-      const blob = await fetchBlob(url);
+      const blob   = await fetchBlob(url);
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl; a.download = name || "file";
@@ -251,39 +251,38 @@ export default function ChatPage() {
     } catch { window.open(url, "_blank"); }
   };
 
-  // ── open preview ─────────────────────────────────────────
+  // ── open preview ──────────────────────────────────────────
   const openPreview = async (url, name, type) => {
-    // Office formats: use Google Docs viewer with the public URL
-    if (GDOCS_PREVIEW.includes(type)) {
-      setPreview({ url, blobUrl: null, name, type, text: null, gdocsUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` });
-      return;
-    }
     setPreviewLoading(true);
-    setPreview({ url, blobUrl: null, name, type, text: null, gdocsUrl: null });
+    setPreview({ url, blobUrl: null, name, type, text: null });
     try {
-      const blob = await fetchBlob(url);
-      if (type === "txt") {
+      if (OFFICE_TYPES.includes(type)) {
+        // Office files can't be rendered — show download card immediately
+        setPreview({ url, blobUrl: null, name, type, text: null });
+      } else if (type === "txt" || type === "csv") {
+        const blob = await fetchBlob(url);
         const text = await blob.text();
-        setPreview({ url, blobUrl: null, name, type, text, gdocsUrl: null });
+        setPreview({ url, blobUrl: null, name, type, text });
       } else {
-        const blobUrl = URL.createObjectURL(blob);
-        setPreview({ url, blobUrl, name, type, text: null, gdocsUrl: null });
+        const blob     = await fetchBlob(url);
+        const mime     = MIME_TYPES[type] || blob.type || "application/octet-stream";
+        const typed    = new Blob([blob], { type: mime });
+        const blobUrl  = URL.createObjectURL(typed);
+        setPreview({ url, blobUrl, name, type, text: null });
       }
     } catch {
-      setPreview({ url, blobUrl: url, name, type, text: null, gdocsUrl: null });
+      setPreview({ url, blobUrl: null, name, type, text: null });
     } finally { setPreviewLoading(false); }
   };
 
-  // ── group pic upload ─────────────────────────────────────
+  // ── group pic upload ──────────────────────────────────────
   const handleGroupPicUpload = async (file, gId) => {
     if (!file) return;
     setUploadingPic(true);
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await api.post(`/groups/${gId}/profile-image`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res    = await api.post(`/groups/${gId}/profile-image`, form);
       const newPic = res.data.profileImage;
       setAllGroups(prev => prev.map(g => String(g.id) === String(gId) ? { ...g, profileImage: newPic } : g));
       if (String(gId) === String(groupId))
@@ -292,10 +291,10 @@ export default function ChatPage() {
     finally { setUploadingPic(false); }
   };
 
-  // ── render file in bubble ────────────────────────────────
+  // ── render file bubble ────────────────────────────────────
   const renderFilePreview = (msg) => {
     if (!msg.fileUrl) return null;
-    const type = getFileType(msg.fileName || "");
+    const type       = getFileType(msg.fileName || "");
     const canPreview = PREVIEWABLE.includes(type);
 
     if (type === "image") return (
@@ -306,19 +305,7 @@ export default function ChatPage() {
         <button className="cp-img-dl" onClick={() => handleDownload(msg.fileUrl, msg.fileName)} title="Download">⬇</button>
       </div>
     );
-    if (type === "video") return (
-      <div className="cp-video-wrap">
-        <VideoBlobPlayer url={msg.fileUrl} />
-        <button className="cp-file-dl-btn" onClick={() => handleDownload(msg.fileUrl, msg.fileName)}>⬇ Download</button>
-      </div>
-    );
-    if (type === "audio") return (
-      <div className="cp-audio-wrap">
-        <audio controls src={msg.fileUrl} className="cp-msg-audio" />
-        <button className="cp-file-dl-btn" onClick={() => handleDownload(msg.fileUrl, msg.fileName)}>⬇ Download</button>
-      </div>
-    );
-    // All document types — show card with preview button if previewable
+
     return (
       <div className="cp-msg-file">
         <span className="cp-msg-file-icon">{FILE_ICONS[type] || "📎"}</span>
@@ -336,26 +323,6 @@ export default function ChatPage() {
         </div>
       </div>
     );
-  };
-
-  // Video needs blob src because <video> can't send auth headers
-  const VideoBlobPlayer = ({ url }) => {
-    const [blobSrc, setBlobSrc] = useState(null);
-    useEffect(() => {
-      let objectUrl;
-      // only fetch from server URLs, not local blob: URLs
-      if (url && !url.startsWith("blob:")) {
-        fetchBlob(url).then(blob => {
-          objectUrl = URL.createObjectURL(blob);
-          setBlobSrc(objectUrl);
-        }).catch(() => setBlobSrc(url));
-      } else {
-        setBlobSrc(url);
-      }
-      return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
-    }, [url]);
-    if (!blobSrc) return <div className="cp-video-loading">Loading video…</div>;
-    return <video controls src={blobSrc} className="cp-msg-video" />;
   };
 
   const ReadTick = ({ read }) => (
@@ -456,9 +423,8 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="cp-header-actions">
-              <button className="cp-action-btn" title="Voice Call" onClick={() => alert("Voice call coming soon!")}>📞</button>
-              <button className="cp-action-btn" title="Video Call" onClick={() => alert("Video call coming soon!")}>📹</button>
-              <button className="cp-action-btn" title="Group Info" onClick={() => navigate(`/groups/${groupId}`)}>ℹ️</button>
+              <button className="cp-action-btn" title="Group Info"
+                onClick={() => navigate(`/groups/${groupId}`)}>ℹ️</button>
             </div>
           </div>
 
@@ -502,7 +468,7 @@ export default function ChatPage() {
                 </div>
               );
             })}
-            {uploading && <div className="cp-uploading">Uploading...</div>}
+            {uploading && <div className="cp-uploading">Uploading…</div>}
             <div ref={messagesEndRef} />
           </div>
 
@@ -515,12 +481,16 @@ export default function ChatPage() {
 
           {/* ── INPUT ───────────────────────────────────────── */}
           <div className="cp-input-wrap">
+            {/* Single hidden file input — accept set dynamically by openFilePicker */}
             <input ref={fileRef} type="file" style={{ display: "none" }}
               onChange={e => { handleFileSelect(e.target.files[0]); e.target.value = ""; }} />
 
             <div className="cp-file-menu-wrap" ref={fileMenuRef}>
-              <button className="cp-attach-btn" title="Share file"
-                onClick={() => setShowFileMenu(p => !p)}>📎</button>
+              <button className={`cp-attach-btn ${showFileMenu ? "active" : ""}`} title="Share file"
+                onClick={() => setShowFileMenu(p => !p)}>
+                <span className="cp-attach-icon">📎</span>
+                <span className="cp-attach-label">Share</span>
+              </button>
               {showFileMenu && (
                 <div className="cp-file-menu">
                   {FILE_TYPES.map(ft => (
@@ -558,23 +528,49 @@ export default function ChatPage() {
                   </div>
                 </div>
                 <div className="cp-preview-body">
-                  {previewLoading && <div className="cp-preview-loading">Loading preview…</div>}
-                  {!previewLoading && preview.type === "image" && <img src={preview.blobUrl} alt={preview.name} />}
-                  {!previewLoading && preview.type === "video" && <video controls src={preview.blobUrl} autoPlay style={{maxWidth:"100%",maxHeight:"65vh"}} />}
-                  {!previewLoading && preview.type === "audio" && <audio controls src={preview.blobUrl} autoPlay style={{width:"100%"}} />}
-                  {!previewLoading && preview.type === "pdf"   && <iframe src={preview.blobUrl} title={preview.name} style={{width:"100%",height:"65vh",border:"none"}} />}
-                  {!previewLoading && preview.type === "txt"   && (
-                    <pre className="cp-preview-text">{preview.text}</pre>
+                  {previewLoading && (
+                    <div className="cp-preview-loading">Loading preview…</div>
                   )}
-                  {!previewLoading && preview.gdocsUrl && (
-                    <iframe src={preview.gdocsUrl} title={preview.name} style={{width:"100%",height:"65vh",border:"none"}} />
+
+                  {/* Image */}
+                  {!previewLoading && preview.type === "image" && (
+                    <img src={preview.blobUrl} alt={preview.name} />
                   )}
+
+                  {/* PDF */}
+                  {!previewLoading && preview.type === "pdf" && (
+                    <iframe src={preview.blobUrl} title={preview.name}
+                      style={{ width:"100%", height:"65vh", border:"none" }} />
+                  )}
+
+                  {/* Plain text / CSV */}
+                  {!previewLoading && (preview.type === "txt" || preview.type === "csv") && (
+                    <pre className="cp-preview-text">{preview.text || "(empty file)"}</pre>
+                  )}
+
+                  {/* Office files — download-only with nice message */}
+                  {!previewLoading && OFFICE_TYPES.includes(preview.type) && (
+                    <div className="cp-preview-unsupported">
+                      <span>{FILE_ICONS[preview.type]}</span>
+                      <p className="cp-preview-filename">{preview.name}</p>
+                      <p className="cp-preview-hint">
+                        {preview.type === "excel" && "Excel spreadsheets"}
+                        {preview.type === "word"  && "Word documents"}
+                        {preview.type === "ppt"   && "PowerPoint presentations"}
+                        {" "}can't be previewed in the browser.
+                      </p>
+                      <p className="cp-preview-sub">Download the file to open it in Microsoft Office or a compatible app.</p>
+                      <button onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download to Open</button>
+                    </div>
+                  )}
+
+                  {/* Unknown / other */}
                   {!previewLoading && !PREVIEWABLE.includes(preview.type) && (
                     <div className="cp-preview-unsupported">
-                      <span>{FILE_ICONS[preview.type] || "📎"}</span>
-                      <p>{preview.name}</p>
-                      <p>This file type cannot be previewed in the browser.</p>
-                      <button onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download to open</button>
+                      <span>📎</span>
+                      <p className="cp-preview-filename">{preview.name}</p>
+                      <p className="cp-preview-hint">This file type can't be previewed in the browser.</p>
+                      <button onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download to Open</button>
                     </div>
                   )}
                 </div>

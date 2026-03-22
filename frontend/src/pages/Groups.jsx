@@ -4,6 +4,15 @@ import Layout from "../components/Layout";
 import api from "../services/api";
 import "../styles/Groups.css";
 
+const GROUP_BANNERS = [
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&q=70",
+  "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=70",
+  "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=70",
+  "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=600&q=70",
+  "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&q=70",
+  "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&q=70",
+];
+
 function Groups() {
   const [groups, setGroups] = useState([]);
   const [joinedGroupIds, setJoinedGroupIds] = useState([]);
@@ -74,7 +83,9 @@ function Groups() {
       <Layout>
         <div className="groups-wrapper">
           <div className="groups-page-hero">
-            <div><h1>Study Groups</h1><p>Browse, search, and join study groups</p></div>
+            <div className="groups-hero-content">
+              <div><h1>Study Groups</h1><p>Browse, search, and join study groups</p></div>
+            </div>
           </div>
           <div className="empty-state">Loading groups...</div>
         </div>
@@ -88,19 +99,28 @@ function Groups() {
 
         {/* Hero */}
         <div className="groups-page-hero">
-          <div>
-            <h1>Study Groups</h1>
-            <p>Browse, search, and join study groups</p>
+          <div className="groups-hero-content">
+            <div>
+              <h1>Study Groups</h1>
+              <p>Browse, search, and join study groups</p>
+            </div>
+            <div className="groups-hero-stats">
+              <div className="groups-hero-stat">
+                <span className="groups-hero-stat-num">{groups.length}</span>
+                <span className="groups-hero-stat-label">Total Groups</span>
+              </div>
+              <div className="groups-hero-stat">
+                <span className="groups-hero-stat-num">{joinedGroupIds.length}</span>
+                <span className="groups-hero-stat-label">Joined</span>
+              </div>
+            </div>
           </div>
-          <div className="groups-hero-stats">
-            <div className="groups-hero-stat">
-              <span className="groups-hero-stat-num">{groups.length}</span>
-              <span className="groups-hero-stat-label">Total Groups</span>
-            </div>
-            <div className="groups-hero-stat">
-              <span className="groups-hero-stat-num">{joinedGroupIds.length}</span>
-              <span className="groups-hero-stat-label">Joined</span>
-            </div>
+          <div className="groups-hero-img-panel">
+            <img
+              src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"
+              alt="Study group"
+            />
+            <div className="groups-hero-img-overlay" />
           </div>
         </div>
 
@@ -126,17 +146,25 @@ function Groups() {
           </div>
         ) : (
           <div className="groups-grid">
-            {filteredGroups.map((group) => {
+            {filteredGroups.map((group, idx) => {
               const isMember = joinedGroupIds.includes(group.id);
               const isPending = pendingGroupIds.includes(group.id);
               const isAdmin = group.adminEmail === currentUserEmail;
+              const bannerImg = GROUP_BANNERS[idx % GROUP_BANNERS.length];
 
               return (
                 <div className="group-card" key={group.id}>
+                  <div className="group-card-banner">
+                    <img src={bannerImg} alt={group.name} />
+                    <div className="group-card-banner-overlay" />
+                    <div className="group-card-banner-tag">
+                      <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
+                        {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="group-card-top">
-                    <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
-                      {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
-                    </span>
                     <h3 onClick={() => navigate(`/groups/${group.id}`)} style={{ cursor: "pointer" }}>
                       {group.name}
                     </h3>

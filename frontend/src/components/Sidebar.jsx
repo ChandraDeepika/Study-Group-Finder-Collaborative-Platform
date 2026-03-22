@@ -25,6 +25,8 @@ export default function Sidebar() {
           <span className="sidebar-logo-icon">📚</span>
           <span className="sidebar-logo-text">StudyConnect</span>
         </div>
+
+        <div className="sidebar-nav-label">Main Menu</div>
         <nav className="nav-links">
           {NAV_ITEMS.map(({ to, label, icon }) => (
             <NavLink key={to} to={to}>
@@ -33,11 +35,25 @@ export default function Sidebar() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="sidebar-img-banner">
+          <img
+            src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80"
+            alt="Study inspiration"
+          />
+          <div className="sidebar-img-banner-overlay">
+            <div className="sidebar-img-banner-text">Ready to learn?</div>
+            <div className="sidebar-img-banner-sub">Join a group today →</div>
+          </div>
+        </div>
       </div>
-      <button className="logout-btn" onClick={handleLogout}>
-        <span>🚪</span>
-        <span>Logout</span>
-      </button>
+
+      <div className="sidebar-bottom">
+        <button className="logout-btn" onClick={handleLogout}>
+          <span>🚪</span>
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   );
 }

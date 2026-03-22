@@ -16,7 +16,7 @@ function GroupMembers() {
       api.get(`/groups/${groupId}/members`),
     ]).then(([groupRes, membersRes]) => {
       setGroupName(groupRes.data.name);
-      setMembers(membersRes.data.filter(m => m.status === 'APPROVED'));
+      setMembers(membersRes.data.filter(m => m.role === 'ADMIN' || m.status === 'APPROVED'));
     }).catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, [groupId]);

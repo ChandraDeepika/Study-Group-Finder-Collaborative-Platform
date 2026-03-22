@@ -44,8 +44,14 @@ export default function CreateGroup() {
     <Layout>
       <div className="create-group-page">
         <div className="create-group-hero">
-          <h1>Create a Study Group</h1>
-          <p>Start a new group and invite students studying the same course</p>
+          <div className="create-group-hero-content">
+            <h1>Create a Study Group</h1>
+            <p>Start a new group and invite students studying the same course</p>
+          </div>
+          <div className="create-group-hero-img">
+            <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80" alt="Study group" />
+            <div className="create-group-hero-img-overlay" />
+          </div>
         </div>
 
         <div className="create-group-card">
