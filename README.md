@@ -13,14 +13,15 @@ A full-stack web application that helps students connect with peers taking the s
 - Sourabh – Frontend Developer and Tester
 - Chandra Deepika – Backend Developer and Tester
 - Bhagyavathi – Frontend Developer  and Database
-
+- Harsha Vardhan - Frontend Developer
 ---
 
 # 📋 Table of Contents
 
 - Problem Statement  
 - Milestone 1 Features  
-- Milestone 2 Features  
+- Milestone 2 Features
+- Milestone 3 Features  
 - Tech Stack  
 - Prerequisites  
 - Installation  
@@ -88,6 +89,34 @@ This platform improves academic networking and simplifies group study coordinati
 - Study group creation form  
 - Group search with filters  
 - Group member management page  
+
+---
+# 🚀 Milestone 3 (Week 5–6)
+
+## Communication & Collaboration (Real-Time Chat)
+
+### Implemented
+
+- Real-time group chat using WebSockets (STOMP protocol)  
+- Chat message persistence using MySQL database  
+- Secure messaging with JWT-based authentication  
+- Group-based messaging (messages visible only to group members)  
+- Chat history retrieval for each group  
+- Pagination support for large message datasets  
+- Message status tracking (Sent, Delivered, Read)  
+- Soft delete for messages  
+- Search messages within group chat  
+- Unread message count functionality  
+- Membership validation before sending messages  
+
+### Outcomes
+
+- Dedicated chat page for each study group  
+- Real-time messaging widget  
+- Live message updates without page refresh  
+- Chat history display  
+- User-friendly chat UI with message differentiation  
+- Scalable backend architecture for real-time communication  
 
 ---
 
@@ -230,21 +259,21 @@ frontend/
 - Session validation  
 
 ---
+## 🏆 Milestone 1, 2 & 3 Outcomes
 
-## 🏆 Milestone 1 & 2 Outcomes
-
-- Fully functional authentication system  
-- User profile and academic course management  
-- Peer discovery based on courses  
-- Study group creation and joining system  
+- Fully functional authentication system with secure login and registration  
+- User profile management and academic course handling  
+- Peer discovery based on enrolled courses  
+- Study group creation, joining, and member management  
 - Course-based group search and filtering  
-
+- Real-time group chat using WebSockets  
+- Dedicated chat page and messaging widget  
+- Live message updates without page refresh  
+- Secure, group-based communication system  
+- Improved collaboration and interaction among students  
 ---
 
 ## 📌 Upcoming Features (Next Milestones)
-
-- Real-time group chat using WebSockets  
-- Shared document collaboration  
 - Study session scheduling with calendar  
 - Email / push notifications  
 - File sharing within study groups  
