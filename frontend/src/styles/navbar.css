@@ -68,7 +68,8 @@
 .nav-link.active {
   background: linear-gradient(135deg, #eff6ff, #f5f3ff);
   color: #2563eb;
-  font-weight: 600;
+  font-weight: 700;
+  border-bottom: 2px solid #2563eb;
 }
 
 /* ── Right side ───────────────────────────────────────────── */

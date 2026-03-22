@@ -92,6 +92,11 @@ function GroupDetail() {
 
         {/* Group Hero */}
         <div className="gd-hero">
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80"
+            alt="Study group"
+            style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.22, borderRadius:"20px", pointerEvents:"none" }}
+          />
           <div className="gd-hero-left">
             <div className="gd-hero-avatar">{group.name?.[0]?.toUpperCase()}</div>
             <div>
