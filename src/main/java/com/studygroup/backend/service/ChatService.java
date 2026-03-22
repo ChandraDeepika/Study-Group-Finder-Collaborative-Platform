@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -65,7 +66,7 @@ public class ChatService {
         ChatMessage savedMessage = chatMessageRepository.save(message);
 
         // Reload full message with sender name populated
-        return chatMessageRepository.findById(savedMessage.getId())
+        return chatMessageRepository.findById(Objects.requireNonNull(savedMessage.getId()))
                 .orElse(savedMessage);
     }
 
@@ -100,7 +101,7 @@ public class ChatService {
     }
 
     public void deleteMessage(Long messageId) {
-        Optional<ChatMessage> optionalMessage = chatMessageRepository.findById(messageId);
+        Optional<ChatMessage> optionalMessage = chatMessageRepository.findById(Objects.requireNonNull(messageId));
         if (optionalMessage.isPresent()) {
             ChatMessage message = optionalMessage.get();
             message.setDeleted(true);
@@ -124,10 +125,10 @@ public class ChatService {
         ChatMessage message = new ChatMessage();
 
         // Load full User and StudyGroup to get names
-        User sender = userRepository.findById(dto.getSenderId())
+        User sender = userRepository.findById(Objects.requireNonNull(dto.getSenderId()))
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
 
-        StudyGroup group = studyGroupRepository.findById(dto.getGroupId())
+        StudyGroup group = studyGroupRepository.findById(Objects.requireNonNull(dto.getGroupId()))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         message.setGroup(group);
