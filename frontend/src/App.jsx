@@ -11,6 +11,8 @@ import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
 import AdminRequests from "./pages/AdminRequests";
 import ChatPage from "./pages/ChatPage";
+import Sessions from "./pages/Sessions";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/groups/:groupId/chat" element={<ChatPage />} />
+      <Route path="/groups/:groupId/sessions" element={<Sessions />} />
+      <Route path="/notifications" element={<Notifications />} />
     </Routes>
   );
 }

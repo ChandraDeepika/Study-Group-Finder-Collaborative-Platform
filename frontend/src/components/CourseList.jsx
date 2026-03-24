@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
-// Same visual map used in ExploreCourses/MyCourses
+// Course visuals
 const COURSE_VISUALS = {
   CS:   { gradient: "linear-gradient(135deg,#1e40af,#3b82f6)", icon: "💻", bg: "#eff6ff", color: "#1e40af" },
   MATH: { gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", icon: "📐", bg: "#fdf4ff", color: "#7c3aed" },
@@ -17,13 +17,24 @@ const COURSE_VISUALS = {
   ECON: { gradient: "linear-gradient(135deg,#065f46,#34d399)", icon: "📊", bg: "#ecfdf5", color: "#065f46" },
   LAW:  { gradient: "linear-gradient(135deg,#1e3a5f,#3b82f6)", icon: "⚖️", bg: "#eff6ff", color: "#1e3a5f" },
 };
-const DEFAULT_VISUAL = { gradient: "linear-gradient(135deg,#374151,#6b7280)", icon: "📘", bg: "#f9fafb", color: "#374151" };
 
-function getCourseVisual(code = "") {
-  const upper = code.toUpperCase();
+const DEFAULT_VISUAL = {
+  gradient: "linear-gradient(135deg,#374151,#6b7280)",
+  icon: "📘",
+  bg: "#f9fafb",
+  color: "#374151",
+};
+
+// ✅ FIXED: Safe function (NO CRASH)
+function getCourseVisual(code) {
+  if (!code) return DEFAULT_VISUAL;
+
+  const upper = code.toString().toUpperCase();
+
   for (const [key, val] of Object.entries(COURSE_VISUALS)) {
     if (upper.startsWith(key)) return val;
   }
+
   return DEFAULT_VISUAL;
 }
 
@@ -37,7 +48,10 @@ function CourseList({ onEnrol }) {
   const [actionId, setActionId] = useState(null);
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     fetchCourses();
   }, [token]);
 
@@ -48,9 +62,9 @@ function CourseList({ onEnrol }) {
         api.get("/courses"),
         api.get("/user-courses/my"),
       ]);
+
       setAllCourses(allRes.data || []);
-      // /user-courses/my returns Course objects directly
-      setEnrolledIds((myRes.data || []).map(c => c.id));
+      setEnrolledIds((myRes.data || []).map((c) => c?.id));
     } catch (e) {
       console.error("CourseList fetch error:", e);
     } finally {
@@ -62,11 +76,11 @@ function CourseList({ onEnrol }) {
     setActionId(courseId);
     try {
       await api.post(`/user-courses/enroll/${courseId}`);
-      setEnrolledIds(prev => [...new Set([...prev, courseId])]);
+      setEnrolledIds((prev) => [...new Set([...prev, courseId])]);
       if (onEnrol) onEnrol();
     } catch (e) {
       console.error("Enrol error:", e);
-      alert("Enrollment failed. You may already be enrolled.");
+      alert("Enrollment failed.");
     } finally {
       setActionId(null);
     }
@@ -76,7 +90,7 @@ function CourseList({ onEnrol }) {
     setActionId(courseId);
     try {
       await api.delete(`/user-courses/${courseId}`);
-      setEnrolledIds(prev => prev.filter(id => id !== courseId));
+      setEnrolledIds((prev) => prev.filter((id) => id !== courseId));
       if (onEnrol) onEnrol();
     } catch (e) {
       console.error("Leave error:", e);
@@ -85,35 +99,62 @@ function CourseList({ onEnrol }) {
     }
   };
 
-  const enrolledCourses   = allCourses.filter(c => enrolledIds.includes(c.id));
-  const availableCourses  = allCourses.filter(c => !enrolledIds.includes(c.id));
+  const enrolledCourses = allCourses.filter(
+    (c) => c && enrolledIds.includes(c.id)
+  );
+
+  const availableCourses = allCourses.filter(
+    (c) => c && !enrolledIds.includes(c.id)
+  );
 
   if (loading) return <p className="dash-empty">Loading courses...</p>;
 
+  if (!allCourses || allCourses.length === 0) {
+    return <p className="dash-empty">No courses available</p>;
+  }
+
   return (
     <div className="dash-list">
+      {/* ENROLLED */}
       {enrolledCourses.length === 0 ? (
         <p className="dash-empty">No courses enrolled yet.</p>
       ) : (
         enrolledCourses.map((course) => {
-          const v = getCourseVisual(course.courseCode);
+          const v = getCourseVisual(course?.courseCode);
+
           return (
-            <div className="dash-list-item" key={course.id}>
+            <div className="dash-list-item" key={course?.id}>
               <div className="dash-list-left">
-                <div className="dash-list-icon" style={{ background: v.bg, fontSize: 18 }}>{v.icon}</div>
+                <div
+                  className="dash-list-icon"
+                  style={{ background: v.bg, fontSize: 18 }}
+                >
+                  {v.icon}
+                </div>
+
                 <div>
-                  <p className="dash-list-title">{course.courseName || course.name}</p>
-                  <p className="dash-list-sub" style={{ color: v.color, fontWeight: 600 }}>{course.courseCode}</p>
+                  <p className="dash-list-title">
+                    {course?.courseName || course?.name || "Untitled Course"}
+                  </p>
+
+                  <p
+                    className="dash-list-sub"
+                    style={{ color: v.color, fontWeight: 600 }}
+                  >
+                    {course?.courseCode || "N/A"}
+                  </p>
                 </div>
               </div>
+
               <div className="dash-list-right">
                 <span className="dash-pill enrolled-pill">✓ Enrolled</span>
+
                 <button
                   className="dash-btn-sm leave-btn"
-                  onClick={() => leaveCourse(course.id)}
-                  disabled={actionId === course.id}
+                  onClick={() => leaveCourse(course?.id)}
+                  disabled={actionId === course?.id}
                 >
-                  {actionId === course.id ? "..." : "Leave"}
+                  {actionId === course?.id ? "..." : "Leave"}
                 </button>
               </div>
             </div>
@@ -121,26 +162,44 @@ function CourseList({ onEnrol }) {
         })
       )}
 
+      {/* AVAILABLE */}
       {availableCourses.length > 0 && (
         <>
           <p className="dash-divider-label">Available to Enrol</p>
+
           {availableCourses.map((course) => {
-            const v = getCourseVisual(course.courseCode);
+            const v = getCourseVisual(course?.courseCode);
+
             return (
-              <div className="dash-list-item" key={course.id}>
+              <div className="dash-list-item" key={course?.id}>
                 <div className="dash-list-left">
-                  <div className="dash-list-icon" style={{ background: v.bg, fontSize: 18 }}>{v.icon}</div>
+                  <div
+                    className="dash-list-icon"
+                    style={{ background: v.bg, fontSize: 18 }}
+                  >
+                    {v.icon}
+                  </div>
+
                   <div>
-                    <p className="dash-list-title">{course.courseName || course.name}</p>
-                    <p className="dash-list-sub" style={{ color: v.color, fontWeight: 600 }}>{course.courseCode}</p>
+                    <p className="dash-list-title">
+                      {course?.courseName || course?.name || "Untitled Course"}
+                    </p>
+
+                    <p
+                      className="dash-list-sub"
+                      style={{ color: v.color, fontWeight: 600 }}
+                    >
+                      {course?.courseCode || "N/A"}
+                    </p>
                   </div>
                 </div>
+
                 <button
                   className="dash-btn-sm enrol-btn"
-                  onClick={() => enrolCourse(course.id)}
-                  disabled={actionId === course.id}
+                  onClick={() => enrolCourse(course?.id)}
+                  disabled={actionId === course?.id}
                 >
-                  {actionId === course.id ? "..." : "Enrol"}
+                  {actionId === course?.id ? "..." : "Enrol"}
                 </button>
               </div>
             );

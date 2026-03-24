@@ -1,99 +1,73 @@
 package com.studygroup.backend.model;
 
-import java.time.LocalDateTime;
-
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "sessions")
+@Table(
+    name = "sessions",
+    indexes = {
+        @Index(name = "idx_session_group_id", columnList = "group_id"),
+        @Index(name = "idx_session_date", columnList = "session_date")
+    }
+)
 public class Session {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // FK → study_groups
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "group_id",
+        nullable = false
+    )
+    private StudyGroup group;
+
     @Column(nullable = false)
     private String title;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private LocalDateTime startTime;
+    @Column(name = "session_date", nullable = false)
+    private LocalDateTime sessionDate;
 
-    @Column(nullable = false)
-    private LocalDateTime endTime;
-
+    // FK → users
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", nullable = false)
-    private StudyGroup studyGroup;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(
+        name = "created_by",
+        nullable = false
+    )
     private User createdBy;
 
     @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     // =========================
     // GETTERS & SETTERS
     // =========================
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
 
-    public String getTitle() {
-        return title;
-    }
+    public StudyGroup getGroup() { return group; }
+    public void setGroup(StudyGroup group) { this.group = group; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public LocalDateTime getSessionDate() { return sessionDate; }
+    public void setSessionDate(LocalDateTime sessionDate) { this.sessionDate = sessionDate; }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
+    public User getCreatedBy() { return createdBy; }
+    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public StudyGroup getStudyGroup() {
-        return studyGroup;
-    }
-
-    public void setStudyGroup(StudyGroup studyGroup) {
-        this.studyGroup = studyGroup;
-    }
-
-    public User getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

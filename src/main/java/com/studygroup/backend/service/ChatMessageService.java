@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -92,7 +93,7 @@ public class ChatMessageService {
         if (request.getContent() == null || request.getContent().isBlank())
             throw new RuntimeException("Message content cannot be empty");
 
-        StudyGroup group = groupRepo.findById(groupId)
+        StudyGroup group = groupRepo.findById(Objects.requireNonNull(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
      MessageType type = request.getMessageType() != null
@@ -148,7 +149,7 @@ public class ChatMessageService {
     public ChatMessageResponse editMessage(Long messageId, String newContent) {
         User user = getCurrentUser();
 
-        ChatMessage message = chatRepo.findById(messageId)
+        ChatMessage message = chatRepo.findById(Objects.requireNonNull(messageId))
                 .orElseThrow(() -> new RuntimeException("Message not found"));
 
         if (!message.getSender().getId().equals(user.getId()))
@@ -182,7 +183,7 @@ public class ChatMessageService {
     public void deleteMessage(Long messageId) {
         User user = getCurrentUser();
 
-        ChatMessage message = chatRepo.findById(messageId)
+        ChatMessage message = chatRepo.findById(Objects.requireNonNull(messageId))
                 .orElseThrow(() -> new RuntimeException("Message not found"));
 
         if (!message.getSender().getId().equals(user.getId()))

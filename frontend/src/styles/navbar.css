@@ -207,6 +207,11 @@
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid #f8fafc;
+  position: relative;
+}
+
+.notif-item.unread {
+  background: #fafbff;
 }
 
 .notif-item:hover { background: #f8fafc; }
