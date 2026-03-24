@@ -4,54 +4,82 @@ import { useNotifications } from "../context/NotificationContext";
 
 export default function NotificationBell() {
   const navigate = useNavigate();
-  const { notifications, clearAll, dismiss } = useNotifications();
-  const [showNotifs, setShowNotifs] = useState(false);
-  const notifRef = useRef(null);
+  const { notifications, unreadCount, markRead, markAllRead, clearAll } = useNotifications();
+  const [open, setOpen] = useState(false);
+  const ref  = useRef(null);
 
+  // Close on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target))
-        setShowNotifs(false);
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleClick = (n) => {
+    markRead(n.id);
     navigate(`/groups/${n.groupId}/chat`);
-    dismiss(n.id);
-    setShowNotifs(false);
+    setOpen(false);
   };
 
+  const handleSeeAll = () => {
+    markAllRead();
+    navigate("/notifications");
+    setOpen(false);
+  };
+
+  // Show only latest 5 in dropdown
+  const preview = notifications.slice(0, 5);
+
   return (
-    <div className="notif-wrap" ref={notifRef}>
-      <button className="notif-btn" onClick={() => setShowNotifs(p => !p)} title="Notifications">
+    <div className="notif-wrap" ref={ref}>
+      <button
+        className="notif-btn"
+        onClick={() => setOpen(p => !p)}
+        title="Notifications"
+      >
         🔔
-        {notifications.length > 0 && (
-          <span className="notif-badge">{notifications.length > 9 ? "9+" : notifications.length}</span>
+        {unreadCount > 0 && (
+          <span className="notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
         )}
       </button>
-      {showNotifs && (
+
+      {open && (
         <div className="notif-panel">
           <div className="notif-panel-header">
-            <span>Notifications</span>
+            <span>Notifications {unreadCount > 0 && <span className="notif-unread-label">{unreadCount} new</span>}</span>
             {notifications.length > 0 && (
               <button className="notif-clear-btn" onClick={clearAll}>Clear all</button>
             )}
           </div>
-          {notifications.length === 0 ? (
+
+          {preview.length === 0 ? (
             <div className="notif-empty">No new notifications</div>
           ) : (
-            notifications.map(n => (
-              <div key={n.id} className="notif-item" onClick={() => handleClick(n)}>
+            preview.map(n => (
+              <div
+                key={n.id}
+                className={`notif-item${n.read ? "" : " unread"}`}
+                onClick={() => handleClick(n)}
+              >
+                {!n.read && <span className="notif-unread-dot" />}
                 <div className="notif-item-avatar">{n.sender.charAt(0).toUpperCase()}</div>
                 <div className="notif-item-body">
-                  <div className="notif-item-title"><strong>{n.sender}</strong> in {n.groupName}</div>
+                  <div className="notif-item-title">
+                    <strong>{n.sender}</strong> in {n.groupName}
+                  </div>
                   <div className="notif-item-text">{n.text}</div>
                   <div className="notif-item-time">{n.time}</div>
                 </div>
               </div>
             ))
+          )}
+
+          {notifications.length > 0 && (
+            <button className="notif-see-all" onClick={handleSeeAll}>
+              See all notifications →
+            </button>
           )}
         </div>
       )}

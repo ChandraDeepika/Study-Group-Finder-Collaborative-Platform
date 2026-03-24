@@ -1,0 +1,238 @@
+/* ── Sessions Page ─────────────────────────────────────────── */
+.sess-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Page Header ───────────────────────────────────────────── */
+.sess-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.sess-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.sess-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Form Card ─────────────────────────────────────────────── */
+.sess-form-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+}
+
+.sess-form-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.sess-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sess-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sess-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sess-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.sess-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+
+.sess-textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.sess-error {
+  color: #dc2626;
+  font-size: 13px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+/* ── Section ───────────────────────────────────────────────── */
+.sess-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sess-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sess-section-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sess-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.sess-badge.green { background: #dcfce7; color: #16a34a; }
+.sess-badge.gray  { background: #f1f5f9; color: #64748b; }
+
+.sess-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+/* ── Session Row ───────────────────────────────────────────── */
+.sess-row {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+
+.sess-row:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+.sess-row.upcoming { border-left: 4px solid #6366f1; }
+.sess-row.past     { border-left: 4px solid var(--border); opacity: 0.72; }
+
+.sess-row-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 8px 6px;
+  flex-shrink: 0;
+}
+
+.sess-row.past .sess-row-date { background: var(--bg-input); }
+
+.sess-row-day {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.sess-row.past .sess-row-day { color: var(--text-muted); }
+
+.sess-row-month {
+  font-size: 10px;
+  font-weight: 700;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sess-row.past .sess-row-month { color: var(--text-muted); }
+
+.sess-row-body { flex: 1; min-width: 0; }
+
+.sess-row-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.sess-row-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+
+.sess-row-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sess-row-del {
+  background: none;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.sess-row-del:hover { background: #fee2e2; color: #dc2626; }
+
+/* ── Primary Button ────────────────────────────────────────── */
+.sess-btn-primary {
+  padding: 10px 20px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.sess-btn-primary:hover { background: #4f46e5; transform: translateY(-1px); }
+.sess-btn-primary:disabled { background: #a5b4fc; cursor: not-allowed; transform: none; }
