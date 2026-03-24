@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -52,7 +53,7 @@ public class ProfileController {
         String contentType = getContentType(fileName);
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
+                .contentType(MediaType.parseMediaType(Objects.requireNonNull(contentType)))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                 .body(resource);
     }

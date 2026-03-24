@@ -7,8 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -53,8 +53,8 @@ public class ChatMessageController {
         String fileName = System.currentTimeMillis() + "_" + (original != null ? original.replaceAll("[^a-zA-Z0-9._-]", "_") : "file");
         Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
         Files.createDirectories(uploadDir);
-        file.transferTo(uploadDir.resolve(fileName).toFile());
-
+        file.transferTo(Objects.requireNonNull(uploadDir.resolve(fileName).toFile()));
+        
         String fileUrl = "/uploads/" + fileName;
         String[] imageExts = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
         boolean isImage = java.util.Arrays.asList(imageExts).contains(ext);

@@ -52,7 +52,7 @@ const PREVIEWABLE    = [...NATIVE_PREVIEW, ...OFFICE_TYPES];
 export default function ChatPage() {
   const { groupId } = useParams();
   const navigate    = useNavigate();
-  const { dark }    = useTheme();
+  useTheme();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   const [activeGroup,    setActiveGroup]    = useState(null);

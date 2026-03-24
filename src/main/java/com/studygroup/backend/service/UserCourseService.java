@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UserCourseService {
@@ -51,10 +52,10 @@ public class UserCourseService {
             throw new RuntimeException("Already enrolled in this course");
         }
 
-        User user = userRepo.findById(userId)
+        User user = userRepo.findById(Objects.requireNonNull(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Course course = courseRepo.findById(courseId)
+        Course course = courseRepo.findById(Objects.requireNonNull(courseId))
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         UserCourse userCourse = new UserCourse();
@@ -80,7 +81,7 @@ public class UserCourseService {
                 .findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
 
-        userCourseRepo.delete(userCourse);
+        userCourseRepo.delete(Objects.requireNonNull(userCourse));
     }
 
     // =============================
