@@ -1,11 +1,7 @@
 package com.studygroup.backend.dto;
 
-import lombok.Getter;
-import lombok.Setter;
 import jakarta.validation.constraints.*;
 
-@Getter
-@Setter
 public class ProfileUpdateRequest {
     @NotBlank
     private String universityName;
@@ -17,4 +13,28 @@ public class ProfileUpdateRequest {
     @DecimalMin("0.0")
     @DecimalMax("10.0")
     private Float universityPassingGPA;
+
+    public String getUniversityName() {
+        return universityName;
+    }
+
+    public void setUniversityName(String universityName) {
+        this.universityName = universityName;
+    }
+
+    public Integer getUniversityPassingYear() {
+        return universityPassingYear;
+    }
+
+    public void setUniversityPassingYear(Integer universityPassingYear) {
+        this.universityPassingYear = universityPassingYear;
+    }
+
+    public Float getUniversityPassingGPA() {
+        return universityPassingGPA;
+    }
+
+    public void setUniversityPassingGPA(Float universityPassingGPA) {
+        this.universityPassingGPA = universityPassingGPA;
+    }
 }

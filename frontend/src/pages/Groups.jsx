@@ -4,6 +4,15 @@ import Layout from "../components/Layout";
 import api from "../services/api";
 import "../styles/Groups.css";
 
+const GROUP_BANNERS = [
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&q=70",
+  "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=70",
+  "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=70",
+  "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=600&q=70",
+  "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&q=70",
+  "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&q=70",
+];
+
 function Groups() {
   const [groups, setGroups] = useState([]);
   const [joinedGroupIds, setJoinedGroupIds] = useState([]);
@@ -72,7 +81,12 @@ function Groups() {
     return (
       <Layout>
         <div className="groups-wrapper">
-          <p>Loading...</p>
+          <div className="groups-page-hero">
+            <div className="groups-hero-content">
+              <div><h1>Study Groups</h1><p>Browse, search, and join study groups</p></div>
+            </div>
+          </div>
+          <div className="empty-state">Loading groups...</div>
         </div>
       </Layout>
     );
@@ -82,10 +96,31 @@ function Groups() {
     <Layout>
       <div className="groups-wrapper">
 
-        {/* Header */}
-        <div className="page-header">
-          <h1>Study Groups</h1>
-          <p>Browse, search, and join study groups</p>
+        {/* Hero */}
+        <div className="groups-page-hero">
+          <div className="groups-hero-content">
+            <div>
+              <h1>Study Groups</h1>
+              <p>Browse, search, and join study groups</p>
+            </div>
+            <div className="groups-hero-stats">
+              <div className="groups-hero-stat">
+                <span className="groups-hero-stat-num">{groups.length}</span>
+                <span className="groups-hero-stat-label">Total Groups</span>
+              </div>
+              <div className="groups-hero-stat">
+                <span className="groups-hero-stat-num">{joinedGroupIds.length}</span>
+                <span className="groups-hero-stat-label">Joined</span>
+              </div>
+            </div>
+          </div>
+          <div className="groups-hero-img-panel">
+            <img
+              src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"
+              alt="Study group"
+            />
+            <div className="groups-hero-img-overlay" />
+          </div>
         </div>
 
         {/* Search + Create */}
@@ -93,7 +128,7 @@ function Groups() {
           <input
             type="text"
             className="groups-search"
-            placeholder="🔍 Search groups by name or description..."
+            placeholder="Search groups by name or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -104,24 +139,32 @@ function Groups() {
 
         {/* Groups Grid */}
         {filteredGroups.length === 0 ? (
-          <div className="empty-state">No groups found.</div>
+          <div className="empty-state">
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+            <p>No groups found{search ? ` for "${search}"` : ""}.</p>
+          </div>
         ) : (
           <div className="groups-grid">
-            {filteredGroups.map((group) => {
+            {filteredGroups.map((group, idx) => {
               const isMember = joinedGroupIds.includes(group.id);
               const isPending = pendingGroupIds.includes(group.id);
               const isAdmin = group.adminEmail === currentUserEmail;
+              const bannerImg = GROUP_BANNERS[idx % GROUP_BANNERS.length];
 
               return (
                 <div className="group-card" key={group.id}>
+                  <div className="group-card-banner">
+                    <img src={bannerImg} alt={group.name} />
+                    <div className="group-card-banner-overlay" />
+                    <div className="group-card-banner-tag">
+                      <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
+                        {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="group-card-top">
-                    <span className={`group-privacy-tag${group.privacy === "PRIVATE" ? " private" : ""}`}>
-                      {group.privacy === "PRIVATE" ? "🔒 Private" : "🌐 Public"}
-                    </span>
-                    <h3
-                      onClick={() => navigate(`/groups/${group.id}`)}
-                      style={{ cursor: "pointer" }}
-                    >
+                    <h3 onClick={() => navigate(`/groups/${group.id}`)} style={{ cursor: "pointer" }}>
                       {group.name}
                     </h3>
                     <p className="group-description">{group.description}</p>
@@ -131,47 +174,28 @@ function Groups() {
                     <div className="group-meta">
                       {group.courseName && (
                         <span style={{
-                          fontSize: "12px",
-                          color: "#2563eb",
-                          fontWeight: 600,
-                          background: "#eff6ff",
-                          padding: "3px 10px",
-                          borderRadius: "20px",
-                          border: "1px solid #dbeafe",
+                          fontSize: "12px", color: "#2563eb", fontWeight: 600,
+                          background: "#eff6ff", padding: "3px 10px",
+                          borderRadius: "20px", border: "1px solid #dbeafe",
                         }}>
-                          {group.courseName}
+                          📚 {group.courseName}
                         </span>
                       )}
-                      <span style={{
-                        fontSize: "12px", color: "#6b7280",
-                        display: "flex", alignItems: "center", gap: "4px"
-                      }}>
-                        👥 {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
-                      </span>
+                      <span>👥 {group.memberCount} {group.memberCount === 1 ? "member" : "members"}</span>
                     </div>
 
                     {isAdmin ? (
-                      <button
-                        className="primary-btn"
-                        onClick={() => navigate(`/groups/${group.id}`)}
-                      >
+                      <button className="primary-btn" onClick={() => navigate(`/groups/${group.id}`)}>
                         ⭐ Manage Group
                       </button>
                     ) : isMember ? (
-                      <button
-                        className="joined-badge"
-                        style={{ cursor: "pointer", border: "none", width: "100%" }}
-                        onClick={() => navigate(`/groups/${group.id}`)}
-                      >
-                         View Group
+                      <button className="joined-badge" onClick={() => navigate(`/groups/${group.id}`)}>
+                        ✓ View Group
                       </button>
                     ) : isPending ? (
-                      <span className="pending-badge">⏳ Request Sent to Admin</span>
+                      <span className="pending-badge">⏳ Request Sent</span>
                     ) : (
-                      <button
-                        className="primary-btn"
-                        onClick={() => handleJoin(group.id)}
-                      >
+                      <button className="primary-btn" onClick={() => handleJoin(group.id)}>
                         Join Group
                       </button>
                     )}

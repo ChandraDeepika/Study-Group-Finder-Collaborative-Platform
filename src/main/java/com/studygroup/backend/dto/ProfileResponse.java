@@ -1,16 +1,10 @@
 package com.studygroup.backend.dto;
 
 import com.studygroup.backend.model.User;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Getter
-@Setter
-@NoArgsConstructor
 public class ProfileResponse {
 
     private String name;
@@ -25,6 +19,105 @@ public class ProfileResponse {
     private String universityName;
     private Integer universityPassingYear;
     private Float universityPassingGPA;
+
+    public ProfileResponse() {}
+
+    // Getters and Setters
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getEducationLevel() {
+        return educationLevel;
+    }
+
+    public void setEducationLevel(String educationLevel) {
+        this.educationLevel = educationLevel;
+    }
+
+    public String getField() {
+        return field;
+    }
+
+    public void setField(String field) {
+        this.field = field;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public String getProfileImageBase64() {
+        return profileImageBase64;
+    }
+
+    public void setProfileImageBase64(String profileImageBase64) {
+        this.profileImageBase64 = profileImageBase64;
+    }
+
+    public String getUniversityName() {
+        return universityName;
+    }
+
+    public void setUniversityName(String universityName) {
+        this.universityName = universityName;
+    }
+
+    public Integer getUniversityPassingYear() {
+        return universityPassingYear;
+    }
+
+    public void setUniversityPassingYear(Integer universityPassingYear) {
+        this.universityPassingYear = universityPassingYear;
+    }
+
+    public Float getUniversityPassingGPA() {
+        return universityPassingGPA;
+    }
+
+    public void setUniversityPassingGPA(Float universityPassingGPA) {
+        this.universityPassingGPA = universityPassingGPA;
+    }
 
     public static ProfileResponse from(User user) {
         ProfileResponse r = new ProfileResponse();

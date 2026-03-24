@@ -14,6 +14,7 @@ public class GroupResponse {
     private GroupRole role;
     private int memberCount;
     private String courseName;
+    private String profileImage;
 
     public GroupResponse(Long id,
                          String name,
@@ -23,7 +24,8 @@ public class GroupResponse {
                          JoinStatus joinStatus,
                          GroupRole role,
                          int memberCount,
-                         String courseName) {
+                         String courseName,
+                         String profileImage) {
 
         this.id = id;
         this.name = name;
@@ -34,6 +36,7 @@ public class GroupResponse {
         this.role = role;
         this.memberCount = memberCount;
         this.courseName = courseName;
+        this.profileImage = profileImage;
     }
 
     public Long getId() { return id; }
@@ -45,4 +48,5 @@ public class GroupResponse {
     public GroupRole getRole() { return role; }
     public int getMemberCount() { return memberCount; }
     public String getCourseName() { return courseName; }
+    public String getProfileImage() { return profileImage; }
 }

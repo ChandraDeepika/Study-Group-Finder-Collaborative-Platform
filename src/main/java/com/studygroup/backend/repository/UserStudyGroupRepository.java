@@ -24,14 +24,19 @@ public interface UserStudyGroupRepository
 
     long countByUserId(Long userId);
 
+    // Membership validation (for chat security)
+    boolean existsByUserIdAndStudyGroupIdAndStatus(
+            Long userId,
+            Long studyGroupId,
+            JoinStatus status
+    );
+
     // Delete all memberships for a group (used when deleting a group)
     void deleteAllByStudyGroupId(Long studyGroupId);
 
     // Count approved members in a group
     int countByStudyGroupIdAndStatus(Long studyGroupId, JoinStatus status);
 
-    // Count approved members in a group
-  
     // =========================
     // GET USER GROUPS BY STATUS
     // =========================
@@ -74,5 +79,4 @@ public interface UserStudyGroupRepository
            "WHERE g.createdBy.id = :adminId AND m.status = 'PENDING'")
     List<UserStudyGroup> findPendingRequestsForAdmin(
             @Param("adminId") Long adminId);
-
 }

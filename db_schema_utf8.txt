@@ -1,0 +1,22 @@
+﻿Field	Type	Null	Key	Default	Extra
+id	bigint	NO	PRI	NULL	auto_increment
+bio	varchar(255)	YES		NULL	
+education_level	varchar(255)	YES		NULL	
+email	varchar(255)	YES	UNI	NULL	
+field	varchar(255)	YES		NULL	
+location	varchar(255)	YES		NULL	
+name	varchar(255)	YES		NULL	
+password	varchar(255)	YES		NULL	
+profile_image	varchar(255)	YES		NULL	
+skills	varchar(255)	YES		NULL	
+university_name	varchar(255)	YES		NULL	
+university_passinggpa	float	YES		NULL	
+university_passing_year	int	YES		NULL	
+Field	Type	Null	Key	Default	Extra
+id	bigint	NO	PRI	NULL	auto_increment
+created_at	datetime(6)	YES	MUL	NULL	
+description	varchar(500)	YES		NULL	
+name	varchar(255)	NO	MUL	NULL	
+privacy	enum('PUBLIC','PRIVATE')	NO	MUL	NULL	
+course_id	bigint	NO	MUL	NULL	
+created_by	bigint	NO	MUL	NULL	

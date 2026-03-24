@@ -1,144 +1,83 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../services/api";
-import "./courses.css";
+import "./Courses.css";
 
 export default function MyCourses() {
-
   const [courses, setCourses] = useState([]);
 
-  // Fetch enrolled courses
   useEffect(() => {
-
-    const fetchMyCourses = async () => {
-
-      try {
-
-        const response = await api.get("/user-courses/my");
-
-        // API returns Course objects directly
-        setCourses(response.data || []);
-
-      } catch (error) {
-
-        console.error("Error fetching enrolled courses:", error);
-
-      }
-
-    };
-
-    fetchMyCourses();
-
+    api.get("/user-courses/my")
+      .then(r => setCourses(r.data || []))
+      .catch(console.error);
   }, []);
 
-  // Leave course
   const leaveCourse = async (courseId) => {
-
     try {
-
       await api.delete(`/user-courses/${courseId}`);
-
-      // remove course from UI immediately
-      setCourses(prev =>
-        prev.filter(course => course.id !== courseId)
-      );
-
-      alert("You left the course");
-
-    } catch (error) {
-
-      console.error("Error leaving course:", error);
-
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+    } catch (err) {
+      console.error("Error leaving course:", err);
     }
-
   };
 
   return (
-
     <Layout>
-
       <div className="courses-wrapper">
 
-        <div className="page-header">
-          <h1>My Courses</h1>
-          <p>Your enrolled courses</p>
+        <div className="courses-page-hero">
+          <div className="courses-page-hero-text">
+            <h1>My Courses</h1>
+            <p>Track your progress across all enrolled courses</p>
+          </div>
+          <div className="my-courses-badge">
+            <span>📚</span>
+            <span>{courses.length} Enrolled</span>
+          </div>
         </div>
 
         <div className="courses-grid">
-
           {courses.length === 0 ? (
-
             <div className="empty-state">
-              You are not enrolled in any courses yet.
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+              <p>You are not enrolled in any courses yet.</p>
+              <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 8 }}>
+                Go to Explore Courses to find and enroll in courses.
+              </p>
             </div>
-
           ) : (
-
-            courses.map((course) => (
-
-              <div className="course-card" key={course.id}>
-
-                <div className="course-card-top">
-
-                  <span className="course-tag">
-                    {course.courseCode}
-                  </span>
-
-                  <h3>{course.courseName}</h3>
-
-                </div>
-
-                <div className="course-card-bottom">
-
-                  {/* Placeholder progress since API returns only course */}
-                  <div className="progress-wrap">
-
-                    <div className="progress-label">
-                      <span>Progress</span>
-                      <span>0%</span>
-                    </div>
-
-                    <div className="progress-bar">
-
-                      <div
-                        className="progress-fill"
-                        style={{ width: "0%" }}
-                      />
-
-                    </div>
-
+            courses.map((course) => {
+              return (
+                <div className="course-card" key={course.id}>
+                  <div className="course-card-banner">
+                    <span className="course-card-banner-code">{course.courseCode}</span>
+                    <span className="course-card-banner-name">{course.courseName}</span>
                   </div>
-
-                  <button
-                    className="primary-btn"
-                    onClick={() =>
-                      alert("Learning module will be added later.")
-                    }
-                  >
-                    Continue
-                  </button>
-
-                  <button
-                    className="leave-btn"
-                    onClick={() => leaveCourse(course.id)}
-                  >
-                    Leave Course
-                  </button>
-
+                  <div className="course-card-body">
+                    <h3>{course.courseName}</h3>
+                    <div className="course-card-bottom">
+                      <div className="progress-wrap">
+                        <div className="progress-label">
+                          <span>Progress</span><span>0%</span>
+                        </div>
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: "0%" }} />
+                        </div>
+                      </div>
+                      <button className="primary-btn" onClick={() => alert("Learning module will be added later.")}>
+                        Continue Learning
+                      </button>
+                      <button className="leave-btn" onClick={() => leaveCourse(course.id)}>
+                        Leave Course
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-              </div>
-
-            ))
-
+              );
+            })
           )}
-
         </div>
-
       </div>
-
     </Layout>
-
   );
-
 }

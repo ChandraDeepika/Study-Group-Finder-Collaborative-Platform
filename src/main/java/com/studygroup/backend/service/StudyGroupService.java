@@ -80,7 +80,8 @@ public class StudyGroupService {
                 joinStatus,
                 role,
                 memberCount,
-                courseName
+                courseName,
+                g.getProfileImage()
         );
     }
 
@@ -228,11 +229,9 @@ public class StudyGroupService {
                 .findByStudyGroupIdAndUserId(groupId, newAdminUserId)
                 .orElseThrow(() -> new RuntimeException("New admin must be a member of the group"));
 
-        // Demote current admin to member
         currentAdminMembership.setRole(GroupRole.MEMBER);
         userStudyGroupRepo.save(currentAdminMembership);
 
-        // Promote new member to admin
         newAdminMembership.setRole(GroupRole.ADMIN);
         userStudyGroupRepo.save(newAdminMembership);
     }
@@ -251,7 +250,6 @@ public class StudyGroupService {
         if (adminMembership.getRole() != GroupRole.ADMIN)
             throw new RuntimeException("Only admin can delete the group");
 
-        // Delete all memberships first, then the group
         userStudyGroupRepo.deleteAllByStudyGroupId(groupId);
         groupRepo.deleteById(groupId);
     }
@@ -377,5 +375,15 @@ public class StudyGroupService {
                     );
                 })
                 .toList();
+    }
+
+    // =========================
+    // CHECK IF USER IS MEMBER
+    // =========================
+    public boolean isUserMemberOfGroup(Long userId, Long groupId) {
+        return userStudyGroupRepo
+                .findByStudyGroupIdAndUserId(groupId, userId)
+                .map(m -> m.getStatus() == JoinStatus.APPROVED)
+                .orElse(false);
     }
 }

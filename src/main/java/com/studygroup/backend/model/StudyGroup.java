@@ -43,6 +43,9 @@ public class StudyGroup {
     @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserStudyGroup> members;
 
+    @Column(name = "profile_image")
+    private String profileImage;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -53,6 +56,10 @@ public class StudyGroup {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -106,4 +113,7 @@ public class StudyGroup {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public String getProfileImage() { return profileImage; }
+    public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
 }

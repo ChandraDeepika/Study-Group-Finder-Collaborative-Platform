@@ -24,24 +24,25 @@ public class SecurityConfig {
     public SecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
+
     @Bean
-public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-}
-@Bean
-public AuthenticationManager authenticationManager(
-        AuthenticationConfiguration config) throws Exception {
-    return config.getAuthenticationManager();
-}
-@Bean
-public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(userDetailsService);
-    authProvider.setPasswordEncoder(passwordEncoder());
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-    return authProvider;
-}
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -51,33 +52,22 @@ public DaoAuthenticationProvider authenticationProvider(UserDetailsService userD
         http
             .cors(cors -> {})
             .csrf(csrf -> csrf.disable())
-
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
             .authenticationProvider(authenticationProvider)
-
             .authorizeHttpRequests(auth -> auth
-
-                // allow preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
-
-                // authenticated endpoints
+                // Allow WebSocket handshake endpoints
+                .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/courses/my").authenticated()
                 .requestMatchers("/api/groups/**").authenticated()
                 .requestMatchers("/api/profile/**").authenticated()
-
-                // everything else
                 .anyRequest().authenticated()
             )
-
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
-
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -1,17 +1,18 @@
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+import { useLocation } from "react-router-dom";
+import Navbar from "./Navbar";
+import ChatWidget from "./ChatWidget";
 import "../styles/layout.css";
 
 export default function Layout({ children }) {
+  const { pathname } = useLocation();
+  const isChatPage = pathname.includes("/chat");
   return (
     <div className="layout">
-      <Sidebar />
-      <div className="main-section">
-        <Topbar />
-        <div className="page-content">
-          {children}
-        </div>
+      <Navbar />
+      <div className="page-content">
+        {children}
       </div>
+      {!isChatPage && <ChatWidget />}
     </div>
   );
 }
