@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/courses/my").authenticated()
                 .requestMatchers("/api/groups/**").authenticated()
+                .requestMatchers("/api/groups/*/sessions/**").authenticated()
                 .requestMatchers("/api/profile/**").authenticated()
                 .anyRequest().authenticated()
             )

@@ -111,9 +111,14 @@ function GroupDetail() {
             </div>
           </div>
           {isMember && (
-            <button className="gd-chat-btn" onClick={() => navigate(`/groups/${id}/chat`)}>
-              💬 Open Chat
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button className="gd-chat-btn" onClick={() => navigate(`/groups/${id}/chat`)}>
+                💬 Open Chat
+              </button>
+              <button className="gd-chat-btn" onClick={() => navigate(`/groups/${id}/sessions`)}>
+                📅 Sessions
+              </button>
+            </div>
           )}
         </div>
 
