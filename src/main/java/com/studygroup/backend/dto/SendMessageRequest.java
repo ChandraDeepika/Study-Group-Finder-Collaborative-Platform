@@ -1,14 +1,17 @@
 
 package com.studygroup.backend.dto;
 
+import com.studygroup.backend.model.MessageType;
+
 public class SendMessageRequest {
 
     private String content;
-    private String messageType;
+     private MessageType messageType; // ✅ FIXED
+
     private String fileUrl;
 
-    public SendMessageRequest() {
-        this.messageType = "TEXT";
+     public SendMessageRequest() {
+        this.messageType = MessageType.TEXT;
     }
 
     public String getContent() {
@@ -19,14 +22,9 @@ public class SendMessageRequest {
         this.content = content;
     }
 
-    public String getMessageType() {
-        return messageType;
-    }
-
-    public void setMessageType(String messageType) {
-        this.messageType = messageType;
-    }
-
+     public MessageType getMessageType() { return messageType; }
+    public void setMessageType(MessageType messageType) { this.messageType = messageType; }
+    
     public String getFileUrl() {
         return fileUrl;
     }
