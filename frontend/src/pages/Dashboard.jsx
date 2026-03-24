@@ -50,8 +50,6 @@ const Dashboard = () => {
         <CoursesSection courses={courses} setCourses={setCourses} />
         <SuggestedPeers peers={peers} />
       </div>
-    </div>
+    </Layout>
   );
-};
-
-export default Dashboard;
+}

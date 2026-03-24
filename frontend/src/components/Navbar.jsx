@@ -2,17 +2,31 @@
 import { Link } from "react-router-dom";
 import "../styles/Navbar.css";
 
-const Navbar = () => {
   return (
-    <nav className="navbar">
-      <h2 className="logo">Study Group Finder</h2>
+    <header className="navbar">
+      <div className="navbar-inner">
+        <div className="navbar-logo" onClick={() => navigate("/dashboard")}>
+          <span className="navbar-logo-icon">📚</span>
+          <span className="navbar-logo-text">StudyConnect</span>
+        </div>
 
-      <div className="nav-links">
-        <Link to="/">Dashboard</Link>
-        <Link to="/studygroups">Study Groups</Link>
+        <nav className="navbar-links">
+          {NAV_ITEMS.map(({ to, label }) => (
+            <NavLink key={to} to={to} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="navbar-right">
+          <button className="navbar-theme-btn" onClick={toggle} title={dark ? "Light mode" : "Dark mode"}>
+            {dark ? "☀️" : "🌙"}
+          </button>
+          <NotificationBell />
+          <ProfileDropdown />
+          <button className="navbar-logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
       </div>
-    </nav>
+    </header>
   );
-};
-
-export default Navbar;
+}

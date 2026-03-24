@@ -1,0 +1,94 @@
+/* ── Global theme variables ───────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg-page:      #f0f4f8;
+  --bg-card:      #ffffff;
+  --bg-input:     #f8fafc;
+  --border:       #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted:   #94a3b8;
+  --navbar-bg:    #ffffff;
+  --sidebar-bg:   #1e293b;
+  --bubble-other: #ffffff;
+  --bubble-other-border: #e2e8f0;
+  --bubble-other-text: #0f172a;
+  --msg-area-bg:  #f8fafc;
+}
+
+[data-theme="dark"] {
+  --bg-page:      #111318;
+  --bg-card:      #1e2128;
+  --bg-input:     #2d3139;
+  --border:       #2d3139;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:   #475569;
+  --navbar-bg:    #1e2128;
+  --sidebar-bg:   #111318;
+  --bubble-other: #2d3139;
+  --bubble-other-border: #374151;
+  --bubble-other-text: #f1f5f9;
+  --msg-area-bg:  #16191f;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page container */
+.page {
+  max-width: 1100px;
+  margin: auto;
+  padding: 30px;
+}
+
+/* Card */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Input fields */
+.input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* Button */
+.btn {
+  background: #2563eb;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #1e4fd1;
+}
+
+/* Grid layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px,1fr));
+  gap: 20px;
+}
