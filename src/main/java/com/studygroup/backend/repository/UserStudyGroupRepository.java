@@ -61,6 +61,16 @@ public interface UserStudyGroupRepository
             @Param("status") JoinStatus status);
 
     // =========================
+    // GET GROUP MEMBERS BY STATUS
+    // =========================
+    @Query("SELECT m FROM UserStudyGroup m " +
+           "JOIN FETCH m.user " +
+           "WHERE m.studyGroup.id = :groupId AND m.status = :status")
+    List<UserStudyGroup> findByStudyGroupIdAndStatus(
+            @Param("groupId") Long groupId,
+            @Param("status") JoinStatus status);
+
+    // =========================
     // GET GROUP MEMBERS
     // =========================
     @Query("SELECT m FROM UserStudyGroup m " +

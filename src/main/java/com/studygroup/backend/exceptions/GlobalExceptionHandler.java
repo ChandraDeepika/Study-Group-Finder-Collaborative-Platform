@@ -3,6 +3,7 @@ package com.studygroup.backend.exceptions;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ public class GlobalExceptionHandler {
         response.put("timestamp", ex.getTimestamp());
 
         return ResponseEntity
-                .status(ex.getStatus())
+                .status(Objects.requireNonNull(ex.getStatus()))
                 .body(response);
     }
 
@@ -91,6 +92,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFound(ResourceNotFoundException ex) {
+
+        Map<String, Object> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        error.put("errorCode", ex.getErrorCode());
+        error.put("timestamp", ex.getTimestamp());
+
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
 }

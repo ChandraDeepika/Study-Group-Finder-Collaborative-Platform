@@ -1,6 +1,7 @@
 package com.studygroup.backend.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -108,7 +109,7 @@ public class StudyGroupService {
 
         User creator = getCurrentUser();
 
-        Course course = courseRepo.findById(request.getCourseId())
+        Course course = courseRepo.findById(Objects.requireNonNull(request.getCourseId()))
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         StudyGroup group = new StudyGroup();
@@ -138,7 +139,7 @@ public class StudyGroupService {
 
         User user = getCurrentUser();
 
-        StudyGroup group = groupRepo.findById(groupId)
+        StudyGroup group = groupRepo.findById(Objects.requireNonNull(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         var existing = userStudyGroupRepo
@@ -181,7 +182,7 @@ public class StudyGroupService {
         if (membership.getRole() == GroupRole.ADMIN)
             throw new RuntimeException("Admin cannot leave. Transfer admin role or delete the group first.");
 
-        userStudyGroupRepo.delete(membership);
+        userStudyGroupRepo.delete(Objects.requireNonNull(membership));
     }
 
     // =========================
@@ -205,7 +206,7 @@ public class StudyGroupService {
                 .findByStudyGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Member not found in this group"));
 
-        userStudyGroupRepo.delete(memberMembership);
+        userStudyGroupRepo.delete(Objects.requireNonNull(memberMembership));
     }
 
     // =========================
@@ -251,7 +252,7 @@ public class StudyGroupService {
             throw new RuntimeException("Only admin can delete the group");
 
         userStudyGroupRepo.deleteAllByStudyGroupId(groupId);
-        groupRepo.deleteById(groupId);
+        groupRepo.deleteById(Objects.requireNonNull(groupId));
     }
 
     // =========================
@@ -272,14 +273,14 @@ public class StudyGroupService {
         Specification<StudyGroup> spec =
                 StudyGroupSpecification.filter(keyword, privacyEnum, courseId, minMembers);
 
-        return groupRepo.findAll(spec, pageable).map(this::toResponse);
+        return groupRepo.findAll(Objects.requireNonNull(spec), Objects.requireNonNull(pageable)).map(this::toResponse);
     }
 
     // =========================
     // GET GROUP BY ID
     // =========================
     public GroupResponse getGroupById(Long id) {
-        StudyGroup g = groupRepo.findById(id)
+        StudyGroup g = groupRepo.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         return toResponse(g);
     }
@@ -340,7 +341,7 @@ public class StudyGroupService {
             member.setStatus(JoinStatus.APPROVED);
             userStudyGroupRepo.save(member);
         } else {
-            userStudyGroupRepo.delete(member);
+            userStudyGroupRepo.delete(Objects.requireNonNull(member));
         }
     }
 

@@ -10,6 +10,7 @@ import com.studygroup.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +39,7 @@ public class CourseService {
     // GET COURSE BY ID
     // =============================
     public Course getCourseById(Long id) {
-        return courseRepo.findById(id)
+        return courseRepo.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new RuntimeException("Course not found"));
     }
 
