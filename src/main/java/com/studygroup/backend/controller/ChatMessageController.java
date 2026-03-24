@@ -6,7 +6,7 @@ import com.studygroup.backend.service.ChatMessageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.studygroup.backend.model.MessageType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,7 +62,7 @@ public class ChatMessageController {
         // Save as a chat message with fileUrl
         SendMessageRequest req = new SendMessageRequest();
         req.setContent(original);
-        req.setMessageType(isImage ? "IMAGE" : "FILE");
+       req.setMessageType(isImage ? MessageType.IMAGE : MessageType.FILE);
         req.setFileUrl(fileUrl);
         ChatMessageResponse saved = chatService.sendMessage(groupId, req);
 

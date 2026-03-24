@@ -10,13 +10,14 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "idx_chat_group_id", columnList = "group_id"),
                 @Index(name = "idx_chat_sender_id", columnList = "sender_id"),
-                @Index(name = "idx_chat_sent_at", columnList = "timestamp")
+                @Index(name = "idx_chat_sent_at", columnList = "created_at")
         }
 )
 public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="message_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,8 +45,8 @@ public class ChatMessage {
     @Column(nullable = false)
     private MessageStatus status = MessageStatus.SENT;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "created_at", nullable = false) // 🔥 FIX
+private LocalDateTime timestamp;
 
     @Column(name = "is_deleted")
     private boolean deleted = false;

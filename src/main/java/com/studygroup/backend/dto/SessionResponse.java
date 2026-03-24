@@ -3,6 +3,7 @@ package com.studygroup.backend.dto;
 import java.time.LocalDateTime;
 
 public class SessionResponse {
+
     private Long id;
     private Long groupId;
     private String groupName;

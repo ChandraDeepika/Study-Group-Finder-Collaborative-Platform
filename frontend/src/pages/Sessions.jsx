@@ -82,7 +82,7 @@ export default function Sessions() {
       setShowModal(false);
       showToast("Session scheduled successfully! 🎉");
     } catch (e) {
-      setError(e.response?.data || "Failed to create session.");
+     setError(e.response?.data?.error || "Failed to create session.");
     } finally {
       setSubmitting(false);
     }

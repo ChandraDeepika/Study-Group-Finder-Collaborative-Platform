@@ -11,6 +11,7 @@ import com.studygroup.backend.repository.SessionRepository;
 import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.repository.UserStudyGroupRepository;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,10 @@ public class SessionService {
     private final UserRepository userRepo;
     private final UserStudyGroupRepository userStudyGroupRepo;
 
-    public SessionService(SessionRepository sessionRepo, StudyGroupRepository groupRepo,
-                          UserRepository userRepo, UserStudyGroupRepository userStudyGroupRepo) {
+    public SessionService(SessionRepository sessionRepo,
+                          StudyGroupRepository groupRepo,
+                          UserRepository userRepo,
+                          UserStudyGroupRepository userStudyGroupRepo) {
         this.sessionRepo = sessionRepo;
         this.groupRepo = groupRepo;
         this.userRepo = userRepo;
@@ -98,6 +101,7 @@ public class SessionService {
 
     public void deleteSession(Long groupId, Long sessionId) {
         User user = getCurrentUser();
+
         Session session = sessionRepo.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
@@ -110,7 +114,7 @@ public class SessionService {
                 .orElse(false);
 
         if (!isCreator && !isAdmin)
-            throw new RuntimeException("Only the session creator or group admin can delete this session");
+            throw new RuntimeException("Only creator or admin can delete");
 
         sessionRepo.delete(session);
     }

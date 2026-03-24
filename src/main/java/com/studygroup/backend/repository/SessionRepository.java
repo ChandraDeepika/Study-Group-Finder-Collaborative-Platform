@@ -10,11 +10,11 @@ import java.util.List;
 
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
-    // All sessions for a group ordered chronologically
+    // All sessions for a group ordered by date
     @Query("SELECT s FROM Session s JOIN FETCH s.createdBy WHERE s.group.id = :groupId ORDER BY s.sessionDate ASC")
     List<Session> findByGroupIdOrderBySessionDateAsc(@Param("groupId") Long groupId);
 
-    // Only upcoming sessions for a group
+    // Upcoming sessions only
     @Query("SELECT s FROM Session s JOIN FETCH s.createdBy WHERE s.group.id = :groupId AND s.sessionDate >= :now ORDER BY s.sessionDate ASC")
     List<Session> findUpcomingByGroupId(@Param("groupId") Long groupId, @Param("now") LocalDateTime now);
 }

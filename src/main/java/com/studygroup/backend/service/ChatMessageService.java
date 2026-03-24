@@ -42,10 +42,18 @@ public class ChatMessageService {
     }
 
     private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepo.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+    System.out.println("AUTH OBJECT: " + auth);
+    System.out.println("AUTH NAME: " + auth.getName());
+    System.out.println("PRINCIPAL: " + auth.getPrincipal());
+
+    return userRepo.findByEmail(auth.getName())
+            .orElseThrow(() -> {
+                System.out.println("❌ USER NOT FOUND IN DB");
+                return new RuntimeException("User not found");
+            });
+}
 
     private void verifyMembership(Long groupId, Long userId) {
         UserStudyGroup membership = memberRepo
@@ -88,11 +96,9 @@ public class ChatMessageService {
         StudyGroup group = groupRepo.findById(Objects.requireNonNull(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        MessageType type = MessageType.TEXT;
-        if (request.getMessageType() != null) {
-            try { type = MessageType.valueOf(request.getMessageType()); }
-            catch (IllegalArgumentException ignored) {}
-        }
+     MessageType type = request.getMessageType() != null
+        ? request.getMessageType()
+        : MessageType.TEXT;
 
         ChatMessage message = new ChatMessage();
         message.setGroup(group);

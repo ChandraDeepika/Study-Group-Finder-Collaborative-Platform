@@ -101,38 +101,38 @@ export default function ChatPage() {
   }, [groupId, loadGroups]);
 
   // ── fetch & merge messages ────────────────────────────────
-  const fetchMessages = useCallback(async () => {
-    if (!groupId) return;
-    try {
-      const res = await api.get(`/groups/${groupId}/chat`);
-      const serverMsgs = res.data.map(msg => ({
-        id:          msg.id,
-        sender:      msg.senderName || "User",
-        senderEmail: msg.senderEmail || "",
-        text:        msg.content || "",
-        fileUrl:     resolveUrl(msg.fileUrl),
-        fileName:    msg.fileUrl ? (msg.content || null) : null,
-        time:        new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        read:        true,
-        optimistic:  false,
-      }));
+ const fetchMessages = useCallback(async () => {
+  if (!groupId) return;
 
-      const newIds = serverMsgs.filter(m => !serverMsgIds.current.has(String(m.id)));
-      newIds.forEach(m => serverMsgIds.current.add(String(m.id)));
-      const othersNew = newIds.filter(m => m.senderEmail !== currentUser.email);
-      if (othersNew.length > 0) {
-        setOthersTyping(true);
-        clearTimeout(othersTypingRef.current);
-        othersTypingRef.current = setTimeout(() => setOthersTyping(false), 2000);
-      }
+  try {
+    const res = await api.get(`/groups/${groupId}/chat`);
 
-      optimisticMsgs.current = optimisticMsgs.current.filter(
-        o => !serverMsgs.some(s => String(s.id) === String(o.confirmedId))
-      );
-      setMessages([...serverMsgs, ...optimisticMsgs.current]);
-    } catch (err) { console.error("Error loading messages:", err); }
-  }, [groupId, currentUser.email]);
+    if (!Array.isArray(res.data)) {
+      console.error("Invalid response:", res.data);
+      return;
+    }
 
+    const serverMsgs = res.data.map(msg => ({
+      id: msg.id,
+      sender: msg.senderName || "User",
+      senderEmail: msg.senderEmail || "",
+      text: msg.content || "",
+      fileUrl: resolveUrl(msg.fileUrl),
+      fileName: msg.fileUrl ? (msg.content || null) : null,
+      time: new Date(msg.timestamp || msg.sentAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      read: true,
+      optimistic: false,
+    }));
+
+    setMessages(serverMsgs);
+
+  } catch (err) {
+    console.error("Error loading messages:", err.response?.data || err.message);
+  }
+}, [groupId, currentUser.email]);
   useEffect(() => {
     serverMsgIds.current   = new Set();
     optimisticMsgs.current = [];
@@ -163,7 +163,7 @@ export default function ChatPage() {
     setNewMessage("");
     try {
       const res = await api.post(`/groups/${groupId}/chat`, {
-        content: text, messageType: "TEXT", fileUrl: null,
+        content: text.trim(), messageType: "TEXT", fileUrl: null,
       });
       if (res.data?.id) serverMsgIds.current.add(String(res.data.id));
       fetchMessages();
