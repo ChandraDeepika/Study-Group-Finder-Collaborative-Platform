@@ -1,87 +1,67 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useNotifications } from "../context/NotificationContext";
 import "../Auth.css";
 
 function Login() {
-
   const navigate = useNavigate();
+  const { refreshNotifications } = useNotifications();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: ""
-  });
-
-  const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState("");
+  const [form,      setForm]      = useState({ email: "", password: "" });
+  const [errors,    setErrors]    = useState({});
+  const [message,   setMessage]   = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const validate = () => {
-    let newErrors = {};
-
-    if (!form.email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Invalid email format";
-    }
-
-    if (!form.password) {
-      newErrors.password = "Password is required";
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(form.password)) {
-      newErrors.password = "Password must contain letters and numbers";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const [loading,   setLoading]   = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: "" }));
+    setMessage("");
+  };
 
-    setErrors({
-      ...errors,
-      [e.target.name]: ""
-    });
+  const validate = () => {
+    const e = {};
+    if (!form.email)    e.email    = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+                        e.email    = "Enter a valid email address.";
+    if (!form.password) e.password = "Password is required.";
+    return e;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-    if (!validate()) return;
-
+    setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
+      const res  = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email: form.email.toLowerCase().trim(), password: form.password }),
       });
-
       const data = await res.text();
-
       if (!res.ok) {
-        setMessage(data || "Login failed. Check credentials.");
+        setMessage(data || "Login failed. Check your credentials.");
         setIsSuccess(false);
         return;
       }
-
       const user = JSON.parse(data);
-
-      localStorage.setItem("token", user.token);
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token",  user.token);
+      localStorage.setItem("user",   JSON.stringify(user));
       localStorage.setItem("userId", String(user.id));
 
-      setMessage("Login successful! Redirecting...");
+      // Re-initialise notifications for the newly logged-in user
+      refreshNotifications();
+
+      setMessage("Login successful! Redirecting…");
       setIsSuccess(true);
       setTimeout(() => navigate("/dashboard"), 500);
-
-    } catch (err) {
-      console.error(err);
-      setMessage(err.message || "Login failed. Check credentials.");
+    } catch {
+      setMessage("Server error. Please try again.");
       setIsSuccess(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,33 +77,21 @@ function Login() {
         <p className="auth-subtitle">Sign in to continue to your dashboard</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <input
-            className="auth-input"
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-          />
+          <input className="auth-input" type="email" name="email"
+            placeholder="Email" value={form.email} onChange={handleChange} />
           {errors.email && <p className="auth-error">{errors.email}</p>}
 
-          <input
-            className="auth-input"
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-          />
+          <input className="auth-input" type="password" name="password"
+            placeholder="Password" value={form.password} onChange={handleChange} />
           {errors.password && <p className="auth-error">{errors.password}</p>}
 
-          <button className="auth-button" type="submit">
-            Sign in
+          <button className="auth-button" type="submit" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
         {message && (
-          <p className={isSuccess ? "auth-success" : "auth-error"} style={{ marginTop: "12px" }}>
+          <p className={isSuccess ? "auth-success" : "auth-error"} style={{ marginTop: 12 }}>
             {message}
           </p>
         )}

@@ -25,6 +25,7 @@ import com.studygroup.backend.repository.StudyGroupRepository;
 import com.studygroup.backend.repository.UserRepository;
 import com.studygroup.backend.repository.UserStudyGroupRepository;
 import com.studygroup.backend.specification.StudyGroupSpecification;
+import com.studygroup.backend.service.EmailService;
 
 @Service
 public class StudyGroupService {
@@ -33,17 +34,20 @@ public class StudyGroupService {
     private final UserRepository userRepo;
     private final UserStudyGroupRepository userStudyGroupRepo;
     private final CourseRepository courseRepo;
+    private final EmailService emailService;
 
     public StudyGroupService(
             StudyGroupRepository groupRepo,
             UserRepository userRepo,
             UserStudyGroupRepository userStudyGroupRepo,
-            CourseRepository courseRepo) {
+            CourseRepository courseRepo,
+            EmailService emailService) {
 
         this.groupRepo = groupRepo;
         this.userRepo = userRepo;
         this.userStudyGroupRepo = userStudyGroupRepo;
         this.courseRepo = courseRepo;
+        this.emailService = emailService;
     }
 
     // =========================
@@ -339,6 +343,12 @@ public class StudyGroupService {
         if (request.isApprove()) {
             member.setStatus(JoinStatus.APPROVED);
             userStudyGroupRepo.save(member);
+            // Notify the approved member by email (async)
+            emailService.sendJoinApproved(
+                    member.getUser().getEmail(),
+                    member.getUser().getName(),
+                    member.getStudyGroup().getName()
+            );
         } else {
             userStudyGroupRepo.delete(member);
         }

@@ -26,15 +26,18 @@ public class SessionService {
     private final StudyGroupRepository groupRepo;
     private final UserRepository userRepo;
     private final UserStudyGroupRepository userStudyGroupRepo;
+    private final EmailService emailService;
 
     public SessionService(SessionRepository sessionRepo,
                           StudyGroupRepository groupRepo,
                           UserRepository userRepo,
-                          UserStudyGroupRepository userStudyGroupRepo) {
+                          UserStudyGroupRepository userStudyGroupRepo,
+                          EmailService emailService) {
         this.sessionRepo = sessionRepo;
         this.groupRepo = groupRepo;
         this.userRepo = userRepo;
         this.userStudyGroupRepo = userStudyGroupRepo;
+        this.emailService = emailService;
     }
 
     private User getCurrentUser() {
@@ -71,6 +74,8 @@ public class SessionService {
             throw new RuntimeException("Session title is required");
         if (req.getSessionDate() == null)
             throw new RuntimeException("Session date is required");
+        if (req.getSessionDate().isBefore(LocalDateTime.now()))
+            throw new RuntimeException("Session date must be in the future");
 
         StudyGroup group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
@@ -82,7 +87,26 @@ public class SessionService {
         session.setSessionDate(req.getSessionDate());
         session.setCreatedBy(user);
 
-        return toResponse(sessionRepo.save(session));
+        SessionResponse response = toResponse(sessionRepo.save(session));
+
+        // Notify all approved members EXCEPT the creator
+        List<String> memberEmails = userStudyGroupRepo
+                .findByStudyGroupIdWithUser(groupId)
+                .stream()
+                .filter(m -> m.getStatus() == JoinStatus.APPROVED
+                          && !m.getUser().getId().equals(user.getId())) // exclude creator
+                .map(m -> m.getUser().getEmail())
+                .toList();
+        emailService.sendSessionCreated(
+                memberEmails,
+                group.getName(),
+                session.getTitle(),
+                session.getDescription(),
+                session.getSessionDate(),
+                user.getName()
+        );
+
+        return response;
     }
 
     public List<SessionResponse> getGroupSessions(Long groupId) {

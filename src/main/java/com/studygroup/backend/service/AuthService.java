@@ -19,35 +19,26 @@ import java.nio.file.Path;
 @Service
 public class AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JwtUtil jwtUtil;
+    @Autowired private AuthenticationManager authenticationManager;
+    @Autowired private EmailService emailService;
+    @Autowired private EmailValidationService emailValidationService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    // ✅ FULL REGISTER WITH PROFILE
     public String registerWithProfile(
-            String name,
-            String email,
-            String password,
-            String location,
-            String educationLevel,
-            String field,
-            String skills,
-            String bio,
-            MultipartFile image
-    ) {
-        email = email.toLowerCase();
+            String name, String email, String password,
+            String location, String educationLevel, String field,
+            String skills, String bio, MultipartFile image) {
 
-        if (userRepository.findByEmail(email).isPresent()) {
-            return "Email already exists";
-        }
+        email = email.toLowerCase().trim();
+
+        // Validate real email via format + fake-domain + MX record check
+        String emailError = emailValidationService.validate(email);
+        if (emailError != null) return emailError;
+
+        if (userRepository.findByEmail(email).isPresent())
+            return "Email already registered. Please login or use a different email.";
 
         User user = new User();
         user.setName(name);
@@ -63,40 +54,38 @@ public class AuthService {
             String originalName = image.getOriginalFilename();
             if (originalName != null && !originalName.isBlank()) {
                 String ext = originalName.contains(".")
-                        ? originalName.substring(originalName.lastIndexOf(".")).toLowerCase()
-                        : "";
+                        ? originalName.substring(originalName.lastIndexOf(".")).toLowerCase() : "";
                 if (ext.matches("\\.(jpg|jpeg|png|gif|webp)")) {
                     try {
                         Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
                         Files.createDirectories(uploadDir);
-
                         String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
                         String fileName = System.currentTimeMillis() + "_" + safeName;
-                        Path targetPath = uploadDir.resolve(fileName);
-
-                        image.transferTo(targetPath.toFile());
+                        image.transferTo(uploadDir.resolve(fileName).toFile());
                         user.setProfileImage(fileName);
                     } catch (IOException e) {
-                        // Save user without profile image
+                        // save without image
                     }
                 }
             }
         }
 
         userRepository.save(user);
+        emailService.sendWelcome(email, name); // async, no-op if mail disabled
         return "User registered successfully";
     }
 
-    // ✅ LOGIN (RETURNS TOKEN + USER INFO)
     public LoginResponse login(String email, String password) {
-        email = email.toLowerCase();
+        email = email.toLowerCase().trim();
 
-        // Authenticate via Spring Security
+        // Block fake emails at login too
+        String emailError = emailValidationService.validate(email);
+        if (emailError != null)
+            throw new RuntimeException("Invalid email: " + emailError);
+
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
+                new UsernamePasswordAuthenticationToken(email, password));
 
-        // Load user to build full response
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
