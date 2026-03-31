@@ -1,23 +1,22 @@
 package com.studygroup.backend.model;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "chat_messages",
-        indexes = {
-                @Index(name = "idx_chat_group_id", columnList = "group_id"),
-                @Index(name = "idx_chat_sender_id", columnList = "sender_id"),
-                @Index(name = "idx_chat_sent_at", columnList = "created_at")
-        }
+    name = "chat_messages",
+    indexes = {
+        @Index(name = "idx_chat_group_id",  columnList = "group_id"),
+        @Index(name = "idx_chat_sender_id", columnList = "sender_id"),
+        @Index(name = "idx_chat_timestamp", columnList = "timestamp")
+    }
 )
 public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="message_id")
+    // DB column is "id" — no @Column(name=...) needed, matches default
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,7 +27,8 @@ public class ChatMessage {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @Column(name = "message_text", length = 1000)
+    // DB has both message_text and content columns
+    @Column(name = "message_text", columnDefinition = "TEXT")
     private String messageText;
 
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
@@ -38,15 +38,16 @@ public class ChatMessage {
     private String fileUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "message_type", nullable = false)
     private MessageType messageType = MessageType.TEXT;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private MessageStatus status = MessageStatus.SENT;
 
-    @Column(name = "created_at", nullable = false) // 🔥 FIX
-private LocalDateTime timestamp;
+    // DB column is "timestamp" — matches field name, no @Column needed
+    @Column(name = "timestamp", nullable = false)
+    private LocalDateTime timestamp;
 
     @Column(name = "is_deleted")
     private boolean deleted = false;
@@ -59,44 +60,27 @@ private LocalDateTime timestamp;
 
     public ChatMessage() {}
 
-    public ChatMessage(StudyGroup group, User sender, String messageText) {
-        this.group = group;
-        this.sender = sender;
-        this.messageText = messageText;
-        this.content = messageText;
-        this.timestamp = LocalDateTime.now();
-    }
-
     @PrePersist
     protected void onCreate() {
-        if (this.timestamp == null) {
-            this.timestamp = LocalDateTime.now();
-        }
+        if (this.timestamp == null) this.timestamp = LocalDateTime.now();
+        // ensure content is never null
+        if (this.content == null && this.messageText != null) this.content = this.messageText;
     }
 
-    // =========================
-    // GETTERS & SETTERS
-    // =========================
+    // ── Getters & Setters ─────────────────────────────────────
 
     public Long getId() { return id; }
 
     public StudyGroup getGroup() { return group; }
     public void setGroup(StudyGroup group) { this.group = group; }
 
-    public StudyGroup getStudyGroup() { return group; }
-    public void setStudyGroup(StudyGroup group) { this.group = group; }
-
-    public Long getGroupId() { return group != null ? group.getId() : null; }
-
     public User getSender() { return sender; }
     public void setSender(User sender) { this.sender = sender; }
-
-    public Long getSenderId() { return sender != null ? sender.getId() : null; }
 
     public String getMessageText() { return messageText; }
     public void setMessageText(String messageText) {
         this.messageText = messageText;
-        this.content = messageText;  // keep both columns in sync
+        if (this.content == null) this.content = messageText;
     }
 
     public String getContent() { return content; }
@@ -117,6 +101,7 @@ private LocalDateTime timestamp;
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 
+    // alias so existing code using getSentAt() still works
     public LocalDateTime getSentAt() { return timestamp; }
 
     public boolean isDeleted() { return deleted; }

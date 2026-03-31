@@ -9,29 +9,22 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    // Get all non-deleted messages for a group, oldest first
+    // All non-deleted messages for a group, oldest first
     List<ChatMessage> findByGroup_IdAndDeletedFalseOrderByTimestampAsc(Long groupId);
 
-    // Pagination support for large chats
-    Page<ChatMessage> findByGroup_IdAndDeletedFalseOrderByTimestampDesc(
-            Long groupId,
-            Pageable pageable
-    );
+    // Paginated messages, newest first (used by ChatService)
+    Page<ChatMessage> findByGroup_IdAndDeletedFalseOrderByTimestampDesc(Long groupId, Pageable pageable);
 
-    // Get latest message in a group (for chat preview)
+    // Latest single message in a group (used by ChatService)
     Optional<ChatMessage> findTopByGroup_IdAndDeletedFalseOrderByTimestampDesc(Long groupId);
 
-    // Count messages in a group
-    long countByGroup_IdAndDeletedFalse(Long groupId);
-
-    // Count unread messages for a user
+    // Count unread messages for a user in a group (used by ChatService)
     @Query("""
             SELECT COUNT(m)
             FROM ChatMessage m
@@ -40,32 +33,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             AND m.status <> 'READ'
             AND m.deleted = false
             """)
-    Long countUnreadMessages(
-            @Param("groupId") Long groupId,
-            @Param("userId") Long userId
-    );
+    Long countUnreadMessages(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
-    // Search messages in a group
+    // Search messages by keyword (used by ChatService)
     @Query("""
-            SELECT m
-            FROM ChatMessage m
+            SELECT m FROM ChatMessage m
             WHERE m.group.id = :groupId
-            AND LOWER(m.messageText) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            AND LOWER(m.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
             AND m.deleted = false
             ORDER BY m.timestamp ASC
             """)
-    List<ChatMessage> searchMessages(
-            @Param("groupId") Long groupId,
-            @Param("keyword") String keyword
-    );
+    List<ChatMessage> searchMessages(@Param("groupId") Long groupId, @Param("keyword") String keyword);
 
-    // Get messages after a specific timestamp
-    List<ChatMessage> findByGroup_IdAndTimestampAfterAndDeletedFalse(
-            Long groupId,
-            LocalDateTime timestamp
-    );
-
-    // Mark all messages as read for a user
+    // Mark all messages as read for a user in a group
     @Modifying
     @Query("""
             UPDATE ChatMessage m
@@ -76,7 +56,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             """)
     int markMessagesAsRead(
             @Param("groupId") Long groupId,
-            @Param("userId") Long userId,
-            @Param("status") MessageStatus status
+            @Param("userId")  Long userId,
+            @Param("status")  MessageStatus status
     );
 }

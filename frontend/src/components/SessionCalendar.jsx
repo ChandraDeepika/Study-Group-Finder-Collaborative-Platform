@@ -8,25 +8,22 @@ const MONTHS_FULL = [
 ];
 
 function isSameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth()    === b.getMonth()    &&
-    a.getDate()     === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() &&
+         a.getMonth()    === b.getMonth()    &&
+         a.getDate()     === b.getDate();
 }
 
 function isBeforeToday(date) {
   const t = new Date();
-  t.setHours(0,0,0,0);
+  t.setHours(0, 0, 0, 0);
   return date < t;
 }
 
 /**
- * SessionCalendar — Premium redesign
- * Props:
- *   sessions  — SessionResponse[]
- *   onDelete  — (sessionId) => void
- *   canDelete — (session) => bool
+ * SessionCalendar
+ * - Only shows UPCOMING sessions (today and future)
+ * - Past days are greyed out and not clickable
+ * - Sessions on past days are hidden from the calendar dots
  */
 export default function SessionCalendar({ sessions = [], onDelete, canDelete }) {
   const today = new Date();
@@ -34,16 +31,21 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selected,  setSelected]  = useState(null);
 
-  // ── Build grid ───────────────────────────────────────────────
+  // Filter to UPCOMING sessions only (today or future)
+  const upcomingSessions = sessions.filter(s => new Date(s.sessionDate) >= new Date(
+    today.getFullYear(), today.getMonth(), today.getDate()
+  ));
+
+  // Build calendar grid
   const firstDow    = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const cells = [];
-  for (let i = 0; i < firstDow; i++)    cells.push(null);
+  for (let i = 0; i < firstDow; i++)     cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewYear, viewMonth, d));
 
-  // ── Session map ──────────────────────────────────────────────
+  // Map upcoming sessions by date
   const byDate = {};
-  sessions.forEach(s => {
+  upcomingSessions.forEach(s => {
     const d   = new Date(s.sessionDate);
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     (byDate[key] = byDate[key] || []).push(s);
@@ -73,7 +75,7 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
   };
 
   const handleDayClick = (date) => {
-    if (!date) return;
+    if (!date || isBeforeToday(date)) return; // block past days
     const s = sessionsFor(date);
     setSelected(prev => prev && isSameDay(prev.date, date) ? null : { date, sessions: s });
   };
@@ -81,13 +83,8 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
   const fmtTime = (dt) =>
     new Date(dt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-  const fmtFullDate = (date) =>
-    date.toLocaleDateString("en-US", {
-      weekday: "long", month: "long", day: "numeric", year: "numeric",
-    });
-
-  // Total sessions this month
-  const monthSessions = sessions.filter(s => {
+  // Count upcoming sessions in current view month
+  const monthUpcoming = upcomingSessions.filter(s => {
     const d = new Date(s.sessionDate);
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
   });
@@ -95,16 +92,16 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
   return (
     <div className="sc-wrap">
 
-      {/* ── Calendar Header ── */}
+      {/* Header */}
       <div className="sc-header">
         <div className="sc-header-left">
           <h2 className="sc-month-title">
             {MONTHS_FULL[viewMonth]}
             <span className="sc-year">{viewYear}</span>
           </h2>
-          {monthSessions.length > 0 && (
+          {monthUpcoming.length > 0 && (
             <span className="sc-month-count">
-              {monthSessions.length} session{monthSessions.length > 1 ? "s" : ""}
+              {monthUpcoming.length} upcoming
             </span>
           )}
         </div>
@@ -117,14 +114,12 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
         </div>
       </div>
 
-      {/* ── Day-of-week labels ── */}
+      {/* Day-of-week labels */}
       <div className="sc-dow-row">
-        {DAYS_SHORT.map(d => (
-          <div key={d} className="sc-dow">{d}</div>
-        ))}
+        {DAYS_SHORT.map(d => <div key={d} className="sc-dow">{d}</div>)}
       </div>
 
-      {/* ── Calendar Grid ── */}
+      {/* Grid */}
       <div className="sc-grid">
         {cells.map((date, i) => {
           if (!date) return <div key={`e-${i}`} className="sc-cell empty" />;
@@ -133,23 +128,25 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
           const isToday     = isSameDay(date, today);
           const isSelected  = selected && isSameDay(selected.date, date);
           const isPast      = isBeforeToday(date);
-          const count       = daySessions.length;
+          const count       = daySessions.length; // only upcoming sessions
 
           return (
             <div
               key={date.toISOString()}
               className={[
                 "sc-cell",
-                isToday    ? "today"    : "",
-                isSelected ? "selected" : "",
-                isPast     ? "past"     : "",
+                isToday    ? "today"        : "",
+                isSelected ? "selected"     : "",
+                isPast     ? "past"         : "",
                 count > 0  ? "has-sessions" : "",
               ].filter(Boolean).join(" ")}
               onClick={() => handleDayClick(date)}
+              style={{ cursor: isPast ? "default" : "pointer" }}
             >
               <span className="sc-day-num">{date.getDate()}</span>
 
-              {count > 0 && (
+              {/* Only show dots for upcoming sessions */}
+              {count > 0 && !isPast && (
                 <div className="sc-indicators">
                   {count <= 3
                     ? Array.from({ length: count }).map((_, idx) => (
@@ -164,7 +161,7 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
         })}
       </div>
 
-      {/* ── Legend ── */}
+      {/* Legend */}
       <div className="sc-legend">
         <div className="sc-legend-item">
           <span className="sc-legend-dot today-dot" />
@@ -172,7 +169,7 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
         </div>
         <div className="sc-legend-item">
           <span className="sc-legend-dot session-dot" />
-          <span>Has sessions</span>
+          <span>Upcoming session</span>
         </div>
         <div className="sc-legend-item">
           <span className="sc-legend-dot selected-dot" />
@@ -180,7 +177,7 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
         </div>
       </div>
 
-      {/* ── Day Detail Panel ── */}
+      {/* Day detail panel — only for future days */}
       {selected && (
         <div className="sc-panel">
           <div className="sc-panel-header">
@@ -201,42 +198,37 @@ export default function SessionCalendar({ sessions = [], onDelete, canDelete }) 
           {selected.sessions.length === 0 ? (
             <div className="sc-panel-empty">
               <span>📭</span>
-              <p>No sessions on this day</p>
+              <p>No upcoming sessions on this day</p>
             </div>
           ) : (
             <div className="sc-panel-list">
-              {selected.sessions.map(s => {
-                const isPastSession = new Date(s.sessionDate) < new Date();
-                return (
-                  <div key={s.id} className={`sc-panel-item${isPastSession ? " past" : ""}`}>
-                    <div className="sc-panel-time-col">
-                      <div className="sc-panel-time">{fmtTime(s.sessionDate)}</div>
-                      <div className={`sc-panel-status${isPastSession ? " done" : " upcoming"}`}>
-                        {isPastSession ? "Done" : "Upcoming"}
-                      </div>
-                    </div>
-                    <div className="sc-panel-content">
-                      <div className="sc-panel-title">{s.title}</div>
-                      {s.description && (
-                        <div className="sc-panel-desc">{s.description}</div>
-                      )}
-                      <div className="sc-panel-meta">
-                        <div className="sc-panel-avatar">{s.createdByName?.[0]?.toUpperCase()}</div>
-                        {s.createdByName}
-                      </div>
-                    </div>
-                    {canDelete && canDelete(s) && (
-                      <button
-                        className="sc-panel-del"
-                        onClick={() => { onDelete && onDelete(s.id); setSelected(null); }}
-                        title="Delete"
-                      >
-                        🗑
-                      </button>
-                    )}
+              {selected.sessions.map(s => (
+                <div key={s.id} className="sc-panel-item">
+                  <div className="sc-panel-time-col">
+                    <div className="sc-panel-time">{fmtTime(s.sessionDate)}</div>
+                    <div className="sc-panel-status upcoming">Upcoming</div>
                   </div>
-                );
-              })}
+                  <div className="sc-panel-content">
+                    <div className="sc-panel-title">{s.title}</div>
+                    {s.description && (
+                      <div className="sc-panel-desc">{s.description}</div>
+                    )}
+                    <div className="sc-panel-meta">
+                      <div className="sc-panel-avatar">{s.createdByName?.[0]?.toUpperCase()}</div>
+                      {s.createdByName}
+                    </div>
+                  </div>
+                  {canDelete && canDelete(s) && (
+                    <button
+                      className="sc-panel-del"
+                      onClick={() => { onDelete && onDelete(s.id); setSelected(null); }}
+                      title="Delete"
+                    >
+                      🗑
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

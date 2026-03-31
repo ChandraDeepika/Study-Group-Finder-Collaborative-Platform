@@ -221,7 +221,7 @@ export default function Sessions() {
         {/* ── Calendar View ── */}
         {activeTab === "calendar" && (
           <SessionCalendar
-            sessions={sessions}
+            sessions={upcoming}
             onDelete={handleDelete}
             canDelete={canDelete}
           />
@@ -333,6 +333,7 @@ export default function Sessions() {
                   <input
                     className="sp-input"
                     type="datetime-local"
+                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                     value={form.sessionDate}
                     onChange={e => setForm(f => ({ ...f, sessionDate: e.target.value }))}
                   />

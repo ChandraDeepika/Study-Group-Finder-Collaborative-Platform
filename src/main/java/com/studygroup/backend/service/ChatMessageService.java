@@ -30,57 +30,48 @@ public class ChatMessageService {
     private final StudyGroupRepository groupRepo;
     private final UserRepository userRepo;
     private final UserStudyGroupRepository memberRepo;
+    private final EmailService emailService;
 
     public ChatMessageService(ChatMessageRepository chatRepo,
                               StudyGroupRepository groupRepo,
                               UserRepository userRepo,
-                              UserStudyGroupRepository memberRepo) {
-        this.chatRepo = chatRepo;
-        this.groupRepo = groupRepo;
-        this.userRepo = userRepo;
-        this.memberRepo = memberRepo;
+                              UserStudyGroupRepository memberRepo,
+                              EmailService emailService) {
+        this.chatRepo    = chatRepo;
+        this.groupRepo   = groupRepo;
+        this.userRepo    = userRepo;
+        this.memberRepo  = memberRepo;
+        this.emailService = emailService;
     }
 
     private User getCurrentUser() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-    System.out.println("AUTH OBJECT: " + auth);
-    System.out.println("AUTH NAME: " + auth.getName());
-    System.out.println("PRINCIPAL: " + auth.getPrincipal());
-
-    return userRepo.findByEmail(auth.getName())
-            .orElseThrow(() -> {
-                System.out.println("❌ USER NOT FOUND IN DB");
-                return new RuntimeException("User not found");
-            });
-}
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return userRepo.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("User not found: " + auth.getName()));
+    }
 
     private void verifyMembership(Long groupId, Long userId) {
-        UserStudyGroup membership = memberRepo
-                .findByStudyGroupIdAndUserId(groupId, userId)
+        UserStudyGroup m = memberRepo.findByStudyGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
-
-        if (membership.getStatus() != JoinStatus.APPROVED)
+        if (m.getStatus() != JoinStatus.APPROVED)
             throw new RuntimeException("Your membership is not approved yet");
     }
 
+    private String resolveText(ChatMessage m) {
+        String c = m.getContent();
+        if (c != null && !c.isBlank()) return c;
+        return m.getMessageText() != null ? m.getMessageText() : "";
+    }
+
     private ChatMessageResponse toResponse(ChatMessage m) {
-        User sender = m.getSender();
+        User s = m.getSender();
         return new ChatMessageResponse(
-                m.getId(),
-                m.getGroup().getId(),
-                sender.getId(),
-                sender.getName(),
-                sender.getEmail(),
-                sender.getProfileImage(),
-                m.getMessageText(),
-                m.getMessageType().name(),
-                m.getFileUrl(),
+                m.getId(), m.getGroup().getId(), s.getId(),
+                s.getName(), s.getEmail(), s.getProfileImage(),
+                resolveText(m), m.getMessageType().name(), m.getFileUrl(),
                 m.isEdited(),
                 m.getStatus() != null ? m.getStatus().getValue() : "sent",
-                m.getTimestamp(),
-                m.getEditedAt()
-        );
+                m.getTimestamp(), m.getEditedAt());
     }
 
     // =========================
@@ -96,51 +87,45 @@ public class ChatMessageService {
         StudyGroup group = groupRepo.findById(Objects.requireNonNull(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-     MessageType type = request.getMessageType() != null
-        ? request.getMessageType()
-        : MessageType.TEXT;
+        MessageType type = request.getMessageType() != null
+                ? request.getMessageType() : MessageType.TEXT;
+
+        String text = request.getContent().trim();
 
         ChatMessage message = new ChatMessage();
         message.setGroup(group);
         message.setSender(sender);
-        message.setMessageText(request.getContent().trim());
+        message.setContent(text);
+        message.setMessageText(text);
         message.setMessageType(type);
         message.setFileUrl(request.getFileUrl());
         message.setStatus(MessageStatus.SENT);
         message.setTimestamp(LocalDateTime.now());
 
-        ChatMessage saved = chatRepo.save(message);
+        ChatMessageResponse response = toResponse(chatRepo.save(message));
 
-        // Build response with fileUrl for FILE/IMAGE types
-        User s = saved.getSender();
-        return new ChatMessageResponse(
-                saved.getId(),
-                saved.getGroup().getId(),
-                s.getId(),
-                s.getName(),
-                s.getEmail(),
-                s.getProfileImage(),
-                saved.getMessageText(),
-                saved.getMessageType().name(),
-                saved.getFileUrl(),
-                saved.isEdited(),
-                saved.getStatus() != null ? saved.getStatus().getValue() : "sent",
-                saved.getTimestamp(),
-                saved.getEditedAt()
-        );
+        // Email all OTHER approved members (not the sender) — async, never blocks
+        if (type == MessageType.TEXT) {
+            List<String> others = memberRepo.findByStudyGroupIdWithUser(groupId)
+                    .stream()
+                    .filter(m -> m.getStatus() == JoinStatus.APPROVED
+                              && !m.getUser().getId().equals(sender.getId()))
+                    .map(m -> m.getUser().getEmail())
+                    .toList();
+            emailService.sendNewChatMessage(others, group.getName(), sender.getName(), text);
+        }
+
+        return response;
     }
 
     // =========================
-    // GET MESSAGES FOR GROUP
+    // GET MESSAGES
     // =========================
     public List<ChatMessageResponse> getMessages(Long groupId) {
         User user = getCurrentUser();
         verifyMembership(groupId, user.getId());
-
         return chatRepo.findByGroup_IdAndDeletedFalseOrderByTimestampAsc(groupId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                .stream().map(this::toResponse).toList();
     }
 
     // =========================
@@ -148,28 +133,25 @@ public class ChatMessageService {
     // =========================
     public ChatMessageResponse editMessage(Long messageId, String newContent) {
         User user = getCurrentUser();
-
         ChatMessage message = chatRepo.findById(Objects.requireNonNull(messageId))
                 .orElseThrow(() -> new RuntimeException("Message not found"));
-
         if (!message.getSender().getId().equals(user.getId()))
             throw new RuntimeException("You can only edit your own messages");
-
         if (message.isDeleted())
             throw new RuntimeException("Cannot edit a deleted message");
-
         if (newContent == null || newContent.isBlank())
             throw new RuntimeException("Message content cannot be empty");
 
-        message.setMessageText(newContent.trim());
+        String text = newContent.trim();
+        message.setContent(text);
+        message.setMessageText(text);
         message.setEdited(true);
         message.setEditedAt(LocalDateTime.now());
-
         return toResponse(chatRepo.save(message));
     }
 
     // =========================
-    // MARK MESSAGES AS READ
+    // MARK AS READ
     // =========================
     @Transactional
     public void markMessagesAsRead(Long groupId) {
@@ -178,18 +160,16 @@ public class ChatMessageService {
     }
 
     // =========================
-    // DELETE MESSAGE (soft delete)
+    // DELETE (soft)
     // =========================
     public void deleteMessage(Long messageId) {
         User user = getCurrentUser();
-
         ChatMessage message = chatRepo.findById(Objects.requireNonNull(messageId))
                 .orElseThrow(() -> new RuntimeException("Message not found"));
-
         if (!message.getSender().getId().equals(user.getId()))
             throw new RuntimeException("You can only delete your own messages");
-
         message.setDeleted(true);
+        message.setContent("[This message was deleted]");
         message.setMessageText("[This message was deleted]");
         chatRepo.save(message);
     }

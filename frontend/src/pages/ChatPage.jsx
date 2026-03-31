@@ -7,14 +7,13 @@ import "../styles/ChatPage.css";
 
 const BASE_URL = "http://localhost:8080";
 
-// ── File type menu (no audio/video) ──────────────────────────
 const FILE_TYPES = [
-  { label: "Image",       icon: "🖼️",  accept: "image/*" },
-  { label: "PDF",         icon: "📄",  accept: ".pdf" },
-  { label: "Word",        icon: "📝",  accept: ".doc,.docx" },
-  { label: "PowerPoint",  icon: "📊",  accept: ".ppt,.pptx" },
-  { label: "Excel / CSV", icon: "📈",  accept: ".xls,.xlsx,.csv" },
-  { label: "Other",       icon: "📎",  accept: "" },
+  { label: "Image",       icon: "🖼️", accept: "image/*" },
+  { label: "PDF",         icon: "📄", accept: ".pdf" },
+  { label: "Word",        icon: "📝", accept: ".doc,.docx" },
+  { label: "PowerPoint",  icon: "📊", accept: ".ppt,.pptx" },
+  { label: "Excel / CSV", icon: "📈", accept: ".xls,.xlsx,.csv" },
+  { label: "Other",       icon: "📎", accept: "" },
 ];
 
 const FILE_ICONS = { pdf: "📄", ppt: "📊", word: "📝", excel: "📈", csv: "📊", txt: "📃", file: "📎" };
@@ -43,9 +42,7 @@ const getFileType = (name = "") => {
   return "file";
 };
 
-// image + pdf + txt + csv can be previewed natively in browser
 const NATIVE_PREVIEW = ["image", "pdf", "txt", "csv"];
-// office files: show download-only card (browser can't render them)
 const OFFICE_TYPES   = ["word", "ppt", "excel"];
 const PREVIEWABLE    = [...NATIVE_PREVIEW, ...OFFICE_TYPES];
 
@@ -79,7 +76,6 @@ export default function ChatPage() {
 
   const groupPicUrl = (g) => resolveUrl(g?.profileImage);
 
-  // ── load groups ───────────────────────────────────────────
   const loadGroups = useCallback(() => {
     api.get("/groups/my-groups").then(res => {
       const list = res.data || [];
@@ -100,39 +96,46 @@ export default function ChatPage() {
     }
   }, [groupId, loadGroups]);
 
-  // ── fetch & merge messages ────────────────────────────────
- const fetchMessages = useCallback(async () => {
-  if (!groupId) return;
+  const fetchMessages = useCallback(async () => {
+    if (!groupId) return;
+    try {
+      const res = await api.get(`/groups/${groupId}/chat`);
+      if (!Array.isArray(res.data)) return;
 
-  try {
-    const res = await api.get(`/groups/${groupId}/chat`);
+      const serverMsgs = res.data.map(msg => ({
+        id:          msg.id,
+        sender:      msg.senderName || "User",
+        senderEmail: msg.senderEmail || "",
+        // backend returns content field; fall back to messageText
+        text:        msg.content || msg.messageText || "",
+        fileUrl:     resolveUrl(msg.fileUrl),
+        fileName:    msg.fileUrl ? (msg.content || msg.messageText || null) : null,
+        time:        new Date(msg.sentAt || msg.timestamp).toLocaleTimeString([], {
+                       hour: "2-digit", minute: "2-digit"
+                     }),
+        read:        true,
+        optimistic:  false,
+      }));
 
-    if (!Array.isArray(res.data)) {
-      console.error("Invalid response:", res.data);
-      return;
+      const newIds = serverMsgs.filter(m => !serverMsgIds.current.has(String(m.id)));
+      newIds.forEach(m => serverMsgIds.current.add(String(m.id)));
+      const othersNew = newIds.filter(m => m.senderEmail !== currentUser.email);
+      if (othersNew.length > 0) {
+        setOthersTyping(true);
+        clearTimeout(othersTypingRef.current);
+        othersTypingRef.current = setTimeout(() => setOthersTyping(false), 2000);
+      }
+
+      optimisticMsgs.current = optimisticMsgs.current.filter(
+        o => !serverMsgs.some(s => String(s.id) === String(o.confirmedId))
+      );
+
+      setMessages([...serverMsgs, ...optimisticMsgs.current]);
+    } catch (err) {
+      console.error("fetchMessages error:", err.response?.data || err.message);
     }
+  }, [groupId, currentUser.email]);
 
-    const serverMsgs = res.data.map(msg => ({
-      id: msg.id,
-      sender: msg.senderName || "User",
-      senderEmail: msg.senderEmail || "",
-      text: msg.content || "",
-      fileUrl: resolveUrl(msg.fileUrl),
-      fileName: msg.fileUrl ? (msg.content || null) : null,
-      time: new Date(msg.timestamp || msg.sentAt).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      read: true,
-      optimistic: false,
-    }));
-
-    setMessages(serverMsgs);
-
-  } catch (err) {
-    console.error("Error loading messages:", err.response?.data || err.message);
-  }
-}, [groupId, currentUser.email]);
   useEffect(() => {
     serverMsgIds.current   = new Set();
     optimisticMsgs.current = [];
@@ -155,62 +158,83 @@ export default function ChatPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── send text ─────────────────────────────────────────────
   const handleSend = async (e) => {
     e?.preventDefault();
-    if (!newMessage.trim()) return;
-    const text = newMessage;
+    const text = newMessage.trim();
+    if (!text) return;
     setNewMessage("");
+
+    // optimistic message — shows instantly before server confirms
+    const optId = `opt-${Date.now()}`;
+    const optMsg = {
+      id: optId,
+      sender:      currentUser.name  || "You",
+      senderEmail: currentUser.email || "",
+      text,
+      fileUrl: null, fileName: null,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: false, optimistic: true, confirmedId: null,
+    };
+    optimisticMsgs.current = [...optimisticMsgs.current, optMsg];
+    setMessages(prev => [...prev, optMsg]);
+
     try {
+      // "text" lowercase — matches MessageType.fromValue() which does equalsIgnoreCase
       const res = await api.post(`/groups/${groupId}/chat`, {
-        content: text.trim(), messageType: "TEXT", fileUrl: null,
+        content: text, messageType: "text", fileUrl: null,
       });
-      if (res.data?.id) serverMsgIds.current.add(String(res.data.id));
-      fetchMessages();
-    } catch (err) { console.error("Send failed:", err); setNewMessage(text); }
+      const confirmedId = String(res.data?.id || "");
+      optimisticMsgs.current = optimisticMsgs.current.map(o =>
+        o.id === optId ? { ...o, confirmedId } : o
+      );
+      if (confirmedId) serverMsgIds.current.add(confirmedId);
+      await fetchMessages();
+    } catch (err) {
+      console.error("Send failed:", err.response?.data || err.message);
+      optimisticMsgs.current = optimisticMsgs.current.filter(o => o.id !== optId);
+      setMessages(prev => prev.filter(m => m.id !== optId));
+      setNewMessage(text);
+    }
   };
 
-  // ── file upload ───────────────────────────────────────────
   const handleFileSelect = async (file) => {
     if (!file) return;
     setShowFileMenu(false);
-    const optimisticId = `opt-${Date.now()}`;
+    const optId  = `opt-${Date.now()}`;
     const localUrl = URL.createObjectURL(file);
-    const optimisticMsg = {
-      id: optimisticId, sender: currentUser.name || "You",
+    const optMsg = {
+      id: optId, sender: currentUser.name || "You",
       senderEmail: currentUser.email || "", text: "",
       fileUrl: localUrl, fileName: file.name,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       read: false, optimistic: true, confirmedId: null,
     };
-    optimisticMsgs.current = [...optimisticMsgs.current, optimisticMsg];
-    setMessages(prev => [...prev, optimisticMsg]);
+    optimisticMsgs.current = [...optimisticMsgs.current, optMsg];
+    setMessages(prev => [...prev, optMsg]);
     setUploading(true);
     try {
       const form = new FormData();
       form.append("file", file);
-      // Do NOT set Content-Type manually — axios sets multipart/form-data + boundary automatically
       const res = await api.post(`/groups/${groupId}/chat/upload`, form);
       const confirmedId = String(res.data.messageId || res.data.id || "");
       optimisticMsgs.current = optimisticMsgs.current.map(o =>
-        o.id === optimisticId ? { ...o, confirmedId } : o
+        o.id === optId ? { ...o, confirmedId } : o
       );
       if (confirmedId) serverMsgIds.current.add(confirmedId);
       await fetchMessages();
     } catch (err) {
-      console.error("Upload failed:", err);
-      optimisticMsgs.current = optimisticMsgs.current.filter(o => o.id !== optimisticId);
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      console.error("Upload failed:", err.response?.data || err.message);
+      optimisticMsgs.current = optimisticMsgs.current.filter(o => o.id !== optId);
+      setMessages(prev => prev.filter(m => m.id !== optId));
     } finally {
       setUploading(false);
     }
   };
 
-  // Defer click to next tick so accept attribute is applied before dialog opens
   const openFilePicker = (accept) => {
     const input = fileRef.current;
     input.value  = "";
-    input.accept = accept; // "" means no filter (Other)
+    input.accept = accept;
     setTimeout(() => input.click(), 0);
   };
 
@@ -222,7 +246,6 @@ export default function ChatPage() {
     }
   };
 
-  // ── edit ──────────────────────────────────────────────────
   const startEdit  = (msg) => { setEditingId(msg.id); setEditText(msg.text); };
   const saveEdit   = async () => {
     if (!editText.trim()) return;
@@ -231,7 +254,6 @@ export default function ChatPage() {
   };
   const cancelEdit = () => { setEditingId(null); setEditText(""); };
 
-  // ── blob fetch (auth header) ──────────────────────────────
   const fetchBlob = async (url) => {
     const token = localStorage.getItem("token");
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -239,10 +261,9 @@ export default function ChatPage() {
     return res.blob();
   };
 
-  // ── download ──────────────────────────────────────────────
   const handleDownload = async (url, name) => {
     try {
-      const blob   = await fetchBlob(url);
+      const blob    = await fetchBlob(url);
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl; a.download = name || "file";
@@ -251,23 +272,21 @@ export default function ChatPage() {
     } catch { window.open(url, "_blank"); }
   };
 
-  // ── open preview ──────────────────────────────────────────
   const openPreview = async (url, name, type) => {
     setPreviewLoading(true);
     setPreview({ url, blobUrl: null, name, type, text: null });
     try {
       if (OFFICE_TYPES.includes(type)) {
-        // Office files can't be rendered — show download card immediately
         setPreview({ url, blobUrl: null, name, type, text: null });
       } else if (type === "txt" || type === "csv") {
         const blob = await fetchBlob(url);
         const text = await blob.text();
         setPreview({ url, blobUrl: null, name, type, text });
       } else {
-        const blob     = await fetchBlob(url);
-        const mime     = MIME_TYPES[type] || blob.type || "application/octet-stream";
-        const typed    = new Blob([blob], { type: mime });
-        const blobUrl  = URL.createObjectURL(typed);
+        const blob    = await fetchBlob(url);
+        const mime    = MIME_TYPES[type] || blob.type || "application/octet-stream";
+        const typed   = new Blob([blob], { type: mime });
+        const blobUrl = URL.createObjectURL(typed);
         setPreview({ url, blobUrl, name, type, text: null });
       }
     } catch {
@@ -275,7 +294,6 @@ export default function ChatPage() {
     } finally { setPreviewLoading(false); }
   };
 
-  // ── group pic upload ──────────────────────────────────────
   const handleGroupPicUpload = async (file, gId) => {
     if (!file) return;
     setUploadingPic(true);
@@ -291,7 +309,6 @@ export default function ChatPage() {
     finally { setUploadingPic(false); }
   };
 
-  // ── render file bubble ────────────────────────────────────
   const renderFilePreview = (msg) => {
     if (!msg.fileUrl) return null;
     const type       = getFileType(msg.fileName || "");
@@ -346,7 +363,6 @@ export default function ChatPage() {
     <Layout>
       <div className="cp-shell-wrap">
 
-        {/* ── GROUPS SIDEBAR ──────────────────────────────── */}
         <div className="cp-groups-sidebar">
           <div className="cp-gs-header">
             <span className="cp-gs-header-icon">💬</span>
@@ -403,7 +419,6 @@ export default function ChatPage() {
 
         <div className="cp-shell">
 
-          {/* ── HEADER ──────────────────────────────────────── */}
           <div className="cp-header">
             <div className="cp-header-left">
               <button className="cp-back-btn" onClick={() => navigate(`/groups/${groupId}`)}>←</button>
@@ -428,7 +443,6 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* ── MESSAGES ────────────────────────────────────── */}
           <div className="cp-messages">
             {messages.length === 0 && (
               <div className="cp-empty"><span>🎉</span><p>No messages yet — say hello!</p></div>
@@ -479,9 +493,7 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* ── INPUT ───────────────────────────────────────── */}
           <div className="cp-input-wrap">
-            {/* Single hidden file input — accept set dynamically by openFilePicker */}
             <input ref={fileRef} type="file" style={{ display: "none" }}
               onChange={e => { handleFileSelect(e.target.files[0]); e.target.value = ""; }} />
 
@@ -515,7 +527,6 @@ export default function ChatPage() {
             <button className="cp-send-btn" onClick={handleSend} disabled={!newMessage.trim()}>➤</button>
           </div>
 
-          {/* ── FILE PREVIEW MODAL ──────────────────────────── */}
           {preview && (
             <div className="cp-preview-overlay" onClick={() => setPreview(null)}>
               <div className="cp-preview-modal" onClick={e => e.stopPropagation()}>
@@ -528,27 +539,14 @@ export default function ChatPage() {
                   </div>
                 </div>
                 <div className="cp-preview-body">
-                  {previewLoading && (
-                    <div className="cp-preview-loading">Loading preview…</div>
-                  )}
-
-                  {/* Image */}
-                  {!previewLoading && preview.type === "image" && (
-                    <img src={preview.blobUrl} alt={preview.name} />
-                  )}
-
-                  {/* PDF */}
+                  {previewLoading && <div className="cp-preview-loading">Loading preview…</div>}
+                  {!previewLoading && preview.type === "image" && <img src={preview.blobUrl} alt={preview.name} />}
                   {!previewLoading && preview.type === "pdf" && (
-                    <iframe src={preview.blobUrl} title={preview.name}
-                      style={{ width:"100%", height:"65vh", border:"none" }} />
+                    <iframe src={preview.blobUrl} title={preview.name} style={{ width:"100%", height:"65vh", border:"none" }} />
                   )}
-
-                  {/* Plain text / CSV */}
                   {!previewLoading && (preview.type === "txt" || preview.type === "csv") && (
                     <pre className="cp-preview-text">{preview.text || "(empty file)"}</pre>
                   )}
-
-                  {/* Office files — download-only with nice message */}
                   {!previewLoading && OFFICE_TYPES.includes(preview.type) && (
                     <div className="cp-preview-unsupported">
                       <span>{FILE_ICONS[preview.type]}</span>
@@ -559,12 +557,10 @@ export default function ChatPage() {
                         {preview.type === "ppt"   && "PowerPoint presentations"}
                         {" "}can't be previewed in the browser.
                       </p>
-                      <p className="cp-preview-sub">Download the file to open it in Microsoft Office or a compatible app.</p>
+                      <p className="cp-preview-sub">Download to open in Microsoft Office or a compatible app.</p>
                       <button onClick={() => handleDownload(preview.url, preview.name)}>⬇ Download to Open</button>
                     </div>
                   )}
-
-                  {/* Unknown / other */}
                   {!previewLoading && !PREVIEWABLE.includes(preview.type) && (
                     <div className="cp-preview-unsupported">
                       <span>📎</span>

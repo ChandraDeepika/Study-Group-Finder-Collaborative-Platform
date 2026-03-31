@@ -22,7 +22,23 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SessionService {
 
-    private final SessionRepository sessionRepository;
+    private final SessionRepository sessionRepo;
+    private final StudyGroupRepository groupRepo;
+    private final UserRepository userRepo;
+    private final UserStudyGroupRepository userStudyGroupRepo;
+    private final EmailService emailService;
+
+    public SessionService(SessionRepository sessionRepo,
+                          StudyGroupRepository groupRepo,
+                          UserRepository userRepo,
+                          UserStudyGroupRepository userStudyGroupRepo,
+                          EmailService emailService) {
+        this.sessionRepo = sessionRepo;
+        this.groupRepo = groupRepo;
+        this.userRepo = userRepo;
+        this.userStudyGroupRepo = userStudyGroupRepo;
+        this.emailService = emailService;
+    }
     private final NotificationService notificationService;
     private final StudyGroupService studyGroupService;
 
