@@ -13,10 +13,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class EmailService {
 
     // Optional injection — null if mail not configured
-    @Autowired(required = false)
+   
     private JavaMailSender mailSender;
 
     @Value("${app.mail.enabled:false}")
@@ -27,18 +29,22 @@ public class EmailService {
 
     // ── Core send — all emails go through here ────────────────
     private void send(String to, String subject, String html) {
-        if (!mailEnabled || mailSender == null) return;
+        if (!mailEnabled || mailSender == null) {
+          log.info("📧 [SIMULATED EMAIL] To {} → {}", to, subject);)
+          return;
+        }
         try {
             MimeMessage msg = mailSender.createMimeMessage();
-            MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
-            h.setFrom(fromAddress, "StudyConnect");
-            h.setTo(to);
-            h.setSubject(subject);
-            h.setText(html, true);
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(fromAddress, "StudyConnect");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
             mailSender.send(msg);
-            System.out.println("[Email] Sent '" + subject + "' → " + to);
+          
+           log.info("✅ Email sent to {}", to);
         } catch (Exception e) {
-            System.err.println("[Email] FAILED to send to " + to + ": " + e.getMessage());
+            log.error("❌ Failed to send email to {}", to, e);
         }
     }
 
@@ -167,5 +173,20 @@ public class EmailService {
             """.formatted(groupName, senderName, preview);
 
         for (String email : memberEmails) send(email, subject, html);
+    }
+}
+// ✅ SESSION REMINDER (VERY IMPORTANT FOR YOUR MILESTONE)
+    @Async
+    public void sendSessionReminder(String to, String title, LocalDateTime time) {
+
+        String dateStr = time.format(
+                DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"));
+
+        String html = """
+            <h2>⏰ Session Reminder</h2>
+            <p>Your session <b>%s</b> is scheduled at %s</p>
+            """.formatted(title, dateStr);
+
+        send(to, "Session Reminder", html);
     }
 }

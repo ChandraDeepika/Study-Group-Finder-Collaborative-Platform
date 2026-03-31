@@ -15,6 +15,7 @@ import com.studygroup.backend.security.JwtUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 @Service
 public class AuthService {
@@ -61,7 +62,9 @@ public class AuthService {
                         Files.createDirectories(uploadDir);
                         String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
                         String fileName = System.currentTimeMillis() + "_" + safeName;
-                        image.transferTo(uploadDir.resolve(fileName).toFile());
+                        Path targetPath = uploadDir.resolve(fileName);
+
+                        image.transferTo(Objects.requireNonNull(targetPath.toFile()));
                         user.setProfileImage(fileName);
                     } catch (IOException e) {
                         // save without image

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -197,7 +198,7 @@ public class StudyGroupController {
             @RequestParam("file") MultipartFile file,
             Authentication authentication) throws IOException {
 
-        StudyGroup group = groupRepo.findById(groupId)
+        StudyGroup group = groupRepo.findById(Objects.requireNonNull(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         String original = file.getOriginalFilename();
@@ -206,7 +207,7 @@ public class StudyGroupController {
         String fileName = "group_" + groupId + "_" + System.currentTimeMillis() + ext;
         Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads");
         Files.createDirectories(uploadDir);
-        file.transferTo(uploadDir.resolve(fileName).toFile());
+        file.transferTo(Objects.requireNonNull(uploadDir.resolve(fileName).toFile()));
 
         group.setProfileImage("/uploads/" + fileName);
         groupRepo.save(group);

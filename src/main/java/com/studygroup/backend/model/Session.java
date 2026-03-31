@@ -1,73 +1,72 @@
 package com.studygroup.backend.model;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
+import jakarta.validation.constraints.*;
+
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
-    name = "sessions",
-    indexes = {
-        @Index(name = "idx_session_group_id", columnList = "group_id"),
-        @Index(name = "idx_session_date", columnList = "session_date")
-    }
+        name = "sessions",
+        indexes = {
+                @Index(name = "idx_group_id", columnList = "group_id"),
+                @Index(name = "idx_date_time", columnList = "date_time")
+        }
 )
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
 public class Session {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // FK → study_groups
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "group_id",
-        nullable = false
-    )
-    private StudyGroup group;
+    @Column(name = "group_id", nullable = false)
+    @NotNull(message = "Group ID is required")
+    private Long groupId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
+    @NotBlank(message = "Title cannot be empty")
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 500)
     private String description;
 
-    @Column(name = "session_date", nullable = false)
-    private LocalDateTime sessionDate;
+    @Column(name = "date_time", nullable = false)
+    @NotNull(message = "Session date and time is required")
+    private LocalDateTime dateTime;
 
-    // FK → users
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "created_by",
-        nullable = false
-    )
-    private User createdBy;
+    @Column(name = "created_by", nullable = false)
+    @NotNull(message = "CreatedBy is required")
+    private Long createdBy;
 
-    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // =========================
-    // GETTERS & SETTERS
-    // =========================
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    public Long getId() { return id; }
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
-    public StudyGroup getGroup() { return group; }
-    public void setGroup(StudyGroup group) { this.group = group; }
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public boolean isUpcoming() {
+        return this.dateTime != null && this.dateTime.isAfter(LocalDateTime.now());
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public LocalDateTime getSessionDate() { return sessionDate; }
-    public void setSessionDate(LocalDateTime sessionDate) { this.sessionDate = sessionDate; }
-
-    public User getCreatedBy() { return createdBy; }
-    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public boolean isPast() {
+        return this.dateTime != null && this.dateTime.isBefore(LocalDateTime.now());
+    }
 }

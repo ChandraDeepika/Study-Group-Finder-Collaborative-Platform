@@ -2,24 +2,24 @@ package com.studygroup.backend.service;
 
 import com.studygroup.backend.dto.SessionRequest;
 import com.studygroup.backend.dto.SessionResponse;
+import com.studygroup.backend.exceptions.ResourceNotFoundException;
 import com.studygroup.backend.model.Session;
-import com.studygroup.backend.model.StudyGroup;
-import com.studygroup.backend.model.User;
-import com.studygroup.backend.model.enums.GroupRole;
-import com.studygroup.backend.model.enums.JoinStatus;
 import com.studygroup.backend.repository.SessionRepository;
-import com.studygroup.backend.repository.StudyGroupRepository;
-import com.studygroup.backend.repository.UserRepository;
-import com.studygroup.backend.repository.UserStudyGroupRepository;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class SessionService {
 
     private final SessionRepository sessionRepo;
@@ -39,107 +39,116 @@ public class SessionService {
         this.userStudyGroupRepo = userStudyGroupRepo;
         this.emailService = emailService;
     }
+    private final NotificationService notificationService;
+    private final StudyGroupService studyGroupService;
 
-    private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepo.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    // 🔥 CREATE SESSION
+    @Transactional
+    public SessionResponse createSession(SessionRequest request) {
+
+        log.info("Creating session for groupId={} by userId={}",
+                request.getGroupId(), request.getUserId());
+
+        // 🔒 Authorization check
+        validateUserInGroup(request.getUserId(), request.getGroupId());
+
+        // ⏱ Validate future time (extra safety beyond DTO)
+        if (request.getDateTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Session must be scheduled in the future");
+        }
+
+        Session session = Session.builder()
+                .groupId(request.getGroupId())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .dateTime(request.getDateTime())
+                .createdBy(request.getUserId())
+                .build();
+
+        Session saved = sessionRepository.save(Objects.requireNonNull(session));
+
+        log.info("Session created successfully with id={}", saved.getId());
+
+        // 🔔 Trigger notifications (async-friendly)
+        notificationService.notifyGroupMembers(saved);
+
+        return mapToResponse(saved);
     }
 
-    private void requireMembership(Long groupId, Long userId) {
-        userStudyGroupRepo.findByStudyGroupIdAndUserId(groupId, userId)
-                .filter(m -> m.getStatus() == JoinStatus.APPROVED)
-                .orElseThrow(() -> new RuntimeException("You are not an approved member of this group"));
-    }
+    // 🔍 GET SESSIONS BY GROUP
+    @Transactional(readOnly = true)
+    public List<SessionResponse> getSessionsByGroup(Long groupId) {
 
-    private SessionResponse toResponse(Session s) {
-        return new SessionResponse(
-                s.getId(),
-                s.getGroup().getId(),
-                s.getGroup().getName(),
-                s.getTitle(),
-                s.getDescription(),
-                s.getSessionDate(),
-                s.getCreatedBy().getId(),
-                s.getCreatedBy().getName(),
-                s.getCreatedAt()
-        );
-    }
+        log.info("Fetching sessions for groupId={}", groupId);
 
-    public SessionResponse createSession(Long groupId, SessionRequest req) {
-        User user = getCurrentUser();
-        requireMembership(groupId, user.getId());
-
-        if (req.getTitle() == null || req.getTitle().isBlank())
-            throw new RuntimeException("Session title is required");
-        if (req.getSessionDate() == null)
-            throw new RuntimeException("Session date is required");
-        if (req.getSessionDate().isBefore(LocalDateTime.now()))
-            throw new RuntimeException("Session date must be in the future");
-
-        StudyGroup group = groupRepo.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
-
-        Session session = new Session();
-        session.setGroup(group);
-        session.setTitle(req.getTitle().trim());
-        session.setDescription(req.getDescription());
-        session.setSessionDate(req.getSessionDate());
-        session.setCreatedBy(user);
-
-        SessionResponse response = toResponse(sessionRepo.save(session));
-
-        // Notify all approved members EXCEPT the creator
-        List<String> memberEmails = userStudyGroupRepo
-                .findByStudyGroupIdWithUser(groupId)
+        return sessionRepository.findByGroupId(groupId)
                 .stream()
-                .filter(m -> m.getStatus() == JoinStatus.APPROVED
-                          && !m.getUser().getId().equals(user.getId())) // exclude creator
-                .map(m -> m.getUser().getEmail())
-                .toList();
-        emailService.sendSessionCreated(
-                memberEmails,
-                group.getName(),
-                session.getTitle(),
-                session.getDescription(),
-                session.getSessionDate(),
-                user.getName()
-        );
-
-        return response;
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public List<SessionResponse> getGroupSessions(Long groupId) {
-        User user = getCurrentUser();
-        requireMembership(groupId, user.getId());
-        return sessionRepo.findByGroupIdOrderBySessionDateAsc(groupId)
-                .stream().map(this::toResponse).toList();
+    // 🔍 GET SESSION BY ID
+    @Transactional(readOnly = true)
+    public SessionResponse getSessionById(Long id) {
+
+        log.info("Fetching session with id={}", id);
+
+        Session session = sessionRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Session", "id", id
+                ));
+
+        return mapToResponse(session);
     }
 
-    public List<SessionResponse> getUpcomingSessions(Long groupId) {
-        User user = getCurrentUser();
-        requireMembership(groupId, user.getId());
-        return sessionRepo.findUpcomingByGroupId(groupId, LocalDateTime.now())
-                .stream().map(this::toResponse).toList();
+    // ❌ DELETE SESSION
+    @Transactional
+    public void deleteSession(Long id) {
+
+        log.warn("Deleting session with id={}", id);
+
+        Session session = sessionRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Session", "id", id
+                ));
+
+        sessionRepository.delete(Objects.requireNonNull(session));
+
+        log.info("Session deleted successfully with id={}", id);
     }
 
-    public void deleteSession(Long groupId, Long sessionId) {
-        User user = getCurrentUser();
+    // ⏰ UPCOMING SESSIONS (for scheduler)
+    @Transactional(readOnly = true)
+    public List<Session> getUpcomingSessions() {
 
-        Session session = sessionRepo.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+        LocalDateTime now = LocalDateTime.now();
 
-        if (!session.getGroup().getId().equals(groupId))
-            throw new RuntimeException("Session does not belong to this group");
+        log.debug("Fetching upcoming sessions after {}", now);
 
-        boolean isCreator = session.getCreatedBy().getId().equals(user.getId());
-        boolean isAdmin = userStudyGroupRepo.findByStudyGroupIdAndUserId(groupId, user.getId())
-                .map(m -> m.getRole() == GroupRole.ADMIN)
-                .orElse(false);
+        return sessionRepository.findUpcomingSessions(now);
+    }
 
-        if (!isCreator && !isAdmin)
-            throw new RuntimeException("Only creator or admin can delete");
+    // 🔒 AUTH VALIDATION (Reusable)
+    private void validateUserInGroup(Long userId, Long groupId) {
+        if (!studyGroupService.isUserMemberOfGroup(userId, groupId)) {
+            log.error("Unauthorized access: userId={} not in groupId={}", userId, groupId);
+            throw new SecurityException("User not authorized for this group");
+        }
+    }
 
-        sessionRepo.delete(session);
+    // 🔄 ENTITY → DTO MAPPER
+    private SessionResponse mapToResponse(Session session) {
+        return SessionResponse.builder()
+                .id(session.getId())
+                .groupId(session.getGroupId())
+                .title(session.getTitle())
+                .description(session.getDescription())
+                .dateTime(session.getDateTime())
+                .createdBy(session.getCreatedBy())
+                .isUpcoming(session.getDateTime().isAfter(LocalDateTime.now()))
+                .createdAt(session.getCreatedAt() != null
+                        ? session.getCreatedAt()
+                        : LocalDateTime.now())
+                .build();
     }
 }
