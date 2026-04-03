@@ -1,10 +1,6 @@
 # Study Group Finder & Collaboration Platform  
 React • Spring Boot • MySQL • Java • JWT
 
-## Milestone 1 & 2 – Authentication, Course Management & Study Group Creation
-
-A full-stack web application that helps students connect with peers taking the same courses to form effective study groups. The platform enables users to create profiles, manage enrolled courses, discover other students studying the same subjects, and create or join study groups for collaborative learning.
-
 ---
 
 # 👥 Team Members
@@ -117,6 +113,33 @@ This platform improves academic networking and simplifies group study coordinati
 - Chat history display  
 - User-friendly chat UI with message differentiation  
 - Scalable backend architecture for real-time communication  
+
+---
+# 🚀 Milestone 4 (Week 7–8)
+
+## Scheduling & Notifications
+
+### Implemented
+
+- Study session scheduling with date and time selection  
+- Session creation with title, description, and group association  
+- Display of scheduled sessions for each study group  
+- Backend support for session management using REST APIs  
+- In-app notification system for session updates  
+- Notification persistence in database  
+- Integration of notification flow with session creation  
+- Configurable email notification module (SMTP-ready, can be enabled)  
+
+---
+
+### Outcomes
+
+- Session scheduling interface (Calendar / Form-based UI)  
+- Event creation form for study sessions  
+- Session listing for groups  
+- In-app notification panel for users  
+- Backend APIs for session and notification management  
+- Scalable notification architecture supporting email integration  
 
 ---
 
@@ -259,22 +282,29 @@ frontend/
 - Session validation  
 
 ---
-## 🏆 Milestone 1, 2 & 3 Outcomes
+## 🏆 Milestone 1, 2, 3 & 4 Outcomes
 
 - Fully functional authentication system with secure login and registration  
 - User profile management and academic course handling  
 - Peer discovery based on enrolled courses  
 - Study group creation, joining, and member management  
 - Course-based group search and filtering  
+
 - Real-time group chat using WebSockets  
 - Dedicated chat page and messaging widget  
 - Live message updates without page refresh  
 - Secure, group-based communication system  
 - Improved collaboration and interaction among students  
----
 
-## 📌 Upcoming Features (Next Milestones)
-- Study session scheduling with calendar  
-- Email / push notifications  
-- File sharing within study groups  
-- Group activity tracking  
+- Study session scheduling with date, time, and group association  
+- Event creation and session management features  
+- Integration of sessions with group workflows  
+- In-app notification system for session updates  
+- Notification persistence and retrieval for users  
+- Improved coordination and planning among group members  
+
+- Scalable backend architecture supporting sessions and notifications  
+- Modular notification system with support for email integration (configurable)  
+- Enhanced user experience with structured collaboration features  
+- End-to-end full-stack application with real-time and asynchronous capabilities  
+
